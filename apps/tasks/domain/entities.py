@@ -16,6 +16,7 @@ class TaskStatus(str, Enum):
     POSTPONED = 'postponed'
     PAUSED = 'paused'
     OVERDUE = 'overdue'
+    CANCELLED = 'cancelled'
 
 
 @dataclass

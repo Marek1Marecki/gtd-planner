@@ -22,3 +22,13 @@ class ITaskRepository(ABC):
     def get_active_tasks(self) -> List[TaskEntity]:
         """Zwraca zadania todo i scheduled."""
         pass
+
+    @abstractmethod
+    def get_dependent_tasks(self, blocker_id: int) -> List[TaskEntity]:
+        """Zwraca zadania, które są blokowane przez blocker_id."""
+        pass
+
+    @abstractmethod
+    def has_active_blockers(self, task_id: int) -> bool:
+        """Sprawdza, czy zadanie ma jakiekolwiek blokery w stanie niedokończonym."""
+        pass

@@ -64,3 +64,30 @@ class DjangoTaskRepository(ITaskRepository):
         # Active = Todo lub Scheduled
         qs = TaskModel.objects.filter(status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value])
         return [self.to_entity(t) for t in qs]
+
+    def get_dependent_tasks(self, blocker_id: int) -> List[TaskEntity]:
+        # Szukamy zadań, które mają w polu 'blocked_by' nasze zadanie (blocker_id)
+        qs = TaskModel.objects.filter(blocked_by__id=blocker_id)
+        return [self.to_entity(t) for t in qs]
+
+    def has_active_blockers(self, task_id: int) -> bool:
+        """
+        Sprawdza, czy zadanie o podanym ID ma aktywne blokery.
+        Aktywny bloker to zadanie, które NIE ma statusu DONE ani CANCELLED.
+        """
+        try:
+            task = TaskModel.objects.get(id=task_id)
+
+            # Pobierz liczbę blokerów, które nie są "zamknięte"
+            active_blockers_count = task.blocked_by.exclude(
+                status__in=[
+                    TaskStatus.DONE.value,
+                    TaskStatus.CANCELLED.value
+                ]
+            ).count()
+
+            return active_blockers_count > 0
+
+        except TaskModel.DoesNotExist:
+            # Jeśli zadanie nie istnieje, technicznie nie ma blokerów (albo rzucamy błąd)
+            return False

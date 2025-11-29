@@ -21,6 +21,7 @@ class Task(models.Model):
         POSTPONED = 'postponed', 'Postponed'
         PAUSED = 'paused', 'Paused'
         OVERDUE = 'overdue', 'Overdue'
+        CANCELLED = 'cancelled', 'Cancelled'
 
     status = models.CharField(
         max_length=20,
@@ -42,6 +43,24 @@ class Task(models.Model):
     # Kontekst
     is_private = models.BooleanField(default=False)
     percent_complete = models.PositiveIntegerField(default=0)
+
+    # Powiazanie z Projektami
+    project = models.ForeignKey(
+        'projects.Project',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='tasks'
+    )
+
+    # Nowe pole: Zależności
+    # "blocked_by" oznacza "ja zależe od tych zadań"
+    # "blocking" (related_name) oznacza "ja blokuję te zadania"
+    blocked_by = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        related_name='blocking',
+        blank=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
