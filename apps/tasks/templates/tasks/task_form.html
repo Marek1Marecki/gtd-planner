@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nowe Zadanie</title>
+</head>
+<body>
+    <h1>Nowe Zadanie (GTD)</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 10px;">
+            <label>Tytuł:</label><br>
+            <input type="text" name="title" required style="width: 300px;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label>Opis:</label><br>
+            <textarea name="description" style="width: 300px; height: 100px;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label>Czas min (minuty):</label><br>
+            <input type="number" name="duration_min">
+        </div>
+
+        <button type="submit">Zapisz do Inbox</button>
+    </form>
+    <p><a href="{% url 'task_list' %}">Anuluj</a></p>
+</body>
+</html>

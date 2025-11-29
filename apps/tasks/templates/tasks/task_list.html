@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GTD Tasks</title>
+</head>
+<body>
+    <h1>Moje Zadania</h1>
+    <p>
+        <a href="{% url 'task_create' %}">Dodaj Nowe Zadanie</a>
+    </p>
+    <hr>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <strong>{{ task.title }}</strong>
+                <span style="color: grey;">({{ task.get_status_display }})</span>
+                {% if task.duration_min %}
+                    - {{ task.duration_min }} min
+                {% endif %}
+            </li>
+        {% empty %}
+            <li>Brak zadań w systemie. Dodaj coś!</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

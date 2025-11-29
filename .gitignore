@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+
+# Środowisko wirtualne (zakładam, że nazywa się .venv lub venv)
+.venv/
+venv/
+ENV/
+
+# PyCharm / IDE
+.idea/
+.vscode/
+/.qodo/
+
+# Zmienne środowiskowe (Bardzo ważne!)
+.env
+
+# Systemowe
+.DS_Store
+Thumbs.db
+
