@@ -1,3 +1,90 @@
+from datetime import date, datetime, timezone
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 
-# Create your views here.
+# Importy z innych aplikacji (Modularność!)
+from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
+from apps.calendar_app.adapters.mock_calendar import MockCalendarProvider
+from apps.calendar_app.domain.services import SchedulerService
+
+
+@login_required
+def daily_view(request):
+    """
+    Główny widok Kalendarza Dziennego.
+    Orkiestruje pobieranie danych i uruchamianie algorytmu harmonogramowania.
+    """
+
+    # 1. Dane wejściowe (Kontekst czasu)
+    today = date.today()
+    # Używamy UTC dla spójności, w produkcji warto użyć user.timezone
+    now = datetime.now(timezone.utc)
+
+    # 2. Pobierz Zadania Elastyczne (Todo/Scheduled)
+    # Korzystamy z Repozytorium zadań, aby pobrać encje domenowe
+    task_repo = DjangoTaskRepository()
+    tasks = task_repo.get_active_tasks()
+
+    # 3. Pobierz Zadania Sztywne (Fixed Events) z Kalendarza
+    # Na razie Mock, docelowo Google Calendar API
+    calendar_provider = MockCalendarProvider()
+    fixed_events = calendar_provider.get_events(request.user.id, today)
+
+    # 4. Uruchom Silnik Planowania (Scheduler)
+    scheduler = SchedulerService()
+
+    # Krok A: Wyznacz wolne okna (omijając Fixed Events)
+    free_windows = scheduler.calculate_free_windows(today, fixed_events)
+
+    # Krok B: Alokuj zadania w wolne okna (Bin Packing + Scoring)
+    # Wynik to lista obiektów ScheduledItem
+    schedule = scheduler.schedule_tasks(tasks, free_windows, now)
+
+    # 5. Przygotuj dane do wyświetlenia (Timeline Items)
+    # Łączymy "Fixed" i "Dynamic" w jedną listę, aby wyświetlić je chronologicznie
+    timeline_items = []
+
+    # Dodaj Fixed Events (Sztywne)
+    for event in fixed_events:
+        duration_min = int((event.end_time - event.start_time).total_seconds() / 60)
+        timeline_items.append({
+            'title': event.title,
+            'start': event.start_time,
+            'end': event.end_time,
+            'type': 'fixed',
+            'duration': duration_min,
+            'priority': None,  # Fixed nie ma priorytetu w sensie GTD
+        })
+
+    # Dodaj Dynamic Tasks (Zaplanowane przez algorytm)
+    scheduled_task_ids = set()
+    for item in schedule:
+        duration_min = int((item.end - item.start).total_seconds() / 60)
+        timeline_items.append({
+            'title': item.task.title,
+            'start': item.start,
+            'end': item.end,
+            'type': 'dynamic',
+            'duration': duration_min,
+            'priority': item.task.priority,
+        })
+        scheduled_task_ids.add(item.task.id)
+
+    # Sortuj wszystko chronologicznie po czasie startu
+    timeline_items.sort(key=lambda x: x['start'])
+
+    # 6. Oblicz Backlog (Zadania, które się nie zmieściły)
+    backlog_tasks = [t for t in tasks if t.id not in scheduled_task_ids]
+
+    # Wybierz szablon bazowy
+    if request.headers.get('HX-Request'):
+        base_template = 'base_htmx.html'
+    else:
+        base_template = 'base.html'
+
+    return render(request, 'calendar/daily_view.html', {
+        'timeline_items': timeline_items,
+        'backlog_tasks': backlog_tasks,
+        'today': today,
+        'base_template': base_template  # Przekazujemy nazwę szablonu do extends
+    })

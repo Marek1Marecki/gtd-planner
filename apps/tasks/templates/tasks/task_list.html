@@ -1,26 +1,51 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GTD Tasks</title>
-</head>
-<body>
-    <h1>Moje Zadania</h1>
-    <p>
-        <a href="{% url 'task_create' %}">Dodaj Nowe Zadanie</a>
-    </p>
-    <hr>
-    <ul>
-        {% for task in tasks %}
-            <li>
-                <strong>{{ task.title }}</strong>
-                <span style="color: grey;">({{ task.get_status_display }})</span>
-                {% if task.duration_min %}
-                    - {{ task.duration_min }} min
-                {% endif %}
-            </li>
-        {% empty %}
-            <li>Brak zadań w systemie. Dodaj coś!</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Lista Zadań</h2>
+    <a href="{% url 'task_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nowe Zadanie
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tytuł</th>
+                    <th>Status</th>
+                    <th>Czas</th>
+                    <th>Priorytet</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>{{ task.title }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if task.status == 'todo' %}bg-warning text-dark
+                            {% elif task.status == 'done' %}bg-success
+                            {% elif task.status == 'blocked' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ task.duration_min|default:"-" }} min</td>
+                    <td>{{ task.priority }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary">Edytuj</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Brak zadań.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

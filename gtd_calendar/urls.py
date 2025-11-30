@@ -6,4 +6,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Tutaj podpinamy nasze aplikacje:
     path('tasks/', include('apps.tasks.urls')),
+    path('calendar/', include('apps.calendar_app.urls')),
 ]
