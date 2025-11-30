@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Nasze aplikacje
-    'apps.core',
+    'apps.core.apps.CoreConfig', # Pełna ścieżka do configu
     'apps.tasks.apps.TasksConfig', # Zmieniamy 'tasks' na pełną ścieżkę do Configu
     'apps.projects',
     'apps.goals',

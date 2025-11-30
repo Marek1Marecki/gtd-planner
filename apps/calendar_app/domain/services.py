@@ -30,8 +30,8 @@ class SchedulerService:
         self,
         day_date: datetime.date,
         fixed_events: List[FixedEvent],
-        work_start: time = time(9, 0),
-        work_end: time = time(17, 0)
+        work_start: time, # Zmieniamy na wymagane argumenty
+        work_end: time
     ) -> List[FreeWindow]:
         """Dzieli dzień na wolne okna, omijając fixed_events."""
 
@@ -42,6 +42,10 @@ class SchedulerService:
         # Dla uproszczenia zakładamy UTC, w produkcji tz z usera
         import pytz
         tz = pytz.UTC
+
+        # Pobierz godziny z profilu
+        #work_start = user_profile.work_start_hour
+        #work_end = user_profile.work_end_hour
 
         current_time = datetime.combine(day_date, work_start).replace(tzinfo=tz)
         end_of_day = datetime.combine(day_date, work_end).replace(tzinfo=tz)
@@ -80,43 +84,68 @@ class SchedulerService:
         self,
         tasks: List[TaskEntity],
         windows: List[FreeWindow],
-        now: datetime
+        now: datetime,
+        user_profile  # Obiekt UserProfile z energy_profile
     ) -> List[ScheduledItem]:
-        """Algorytm Bin Packing z priorytetami."""
+        """
+        Inteligentny algorytm alokacji (Bin Packing z priorytetami).
+        Iteruje po oknach, dobierając zadania pasujące energetycznie i czasowo.
+        """
 
         scorer = TaskScorer()
         schedule = []
 
-        # 1. Oblicz Score dla każdego zadania
-        # (W prawdziwym kodzie robilibyśmy to wewnątrz pętli okien dla Energy Bonus,
-        # ale dla MVP zróbmy to raz globalnie)
-        scored_tasks = []
-        for t in tasks:
-            if not t.is_active(): continue
-            score = scorer.calculate_score(t, now)
-            scored_tasks.append((t, score))
+        # Tworzymy kopię listy zadań do zaplanowania (żeby móc usuwać zaplanowane)
+        # Filtrujemy tylko aktywne (TODO/SCHEDULED)
+        remaining_tasks = [t for t in tasks if t.is_active()]
 
-        # 2. Sortuj malejąco po Score
-        scored_tasks.sort(key=lambda x: x[1], reverse=True)
-
-        # Lista zadań do zaplanowania (kolejka)
-        queue = [item[0] for item in scored_tasks]
-
-        # 3. Pętla Alokacji
         for window in windows:
             current_time = window.start
 
-            # Dopóki jest czas w oknie i są zadania w kolejce
+            # Pobierz poziom energii dla danej godziny (uproszczenie: godzina startu okna)
+            # Profil w bazie to np. { "09": 3, "10": 2 }
+            current_hour_str = current_time.strftime("%H")
+
+            # Domyślny poziom energii to 1 (Niska/Normalna), jeśli nie zdefiniowano
+            slot_energy = 1
+            if user_profile and user_profile.energy_profile:
+                # JSON w bazie może mieć klucze jako stringi "09" lub inty 9.
+                # Spróbujmy obu wariantów dla bezpieczeństwa.
+                val = user_profile.energy_profile.get(current_hour_str)
+                if val is None:
+                    val = user_profile.energy_profile.get(int(current_hour_str))
+
+                if val is not None:
+                    slot_energy = int(val)
+
+            # -----------------------------------------------------------
+            # KROK 1: Przelicz Score dla tego konkretnego okna (Kontekst)
+            # -----------------------------------------------------------
+            scored_candidates = []
+            for task in remaining_tasks:
+                # Obliczamy score uwzględniając dopasowanie do slot_energy
+                score = scorer.calculate_score(task, now, slot_energy_level=slot_energy)
+                scored_candidates.append((task, score))
+
+            # Sortuj malejąco po Score
+            scored_candidates.sort(key=lambda x: x[1], reverse=True)
+
+            # Tworzymy kolejkę priorytetową dla tego okna
+            queue = [item[0] for item in scored_candidates]
+
+            # -----------------------------------------------------------
+            # KROK 2: Wypełnianie okna (Bin Packing)
+            # -----------------------------------------------------------
             i = 0
             while i < len(queue):
                 task = queue[i]
                 duration = task.duration_expected
 
-                # Sprawdź czy się mieści
-                window_remaining = (window.end - current_time).total_seconds() / 60
+                # Ile czasu zostało w oknie?
+                window_remaining_minutes = (window.end - current_time).total_seconds() / 60
 
-                if duration <= window_remaining:
-                    # Pasuje! Planujemy.
+                if duration <= window_remaining_minutes:
+                    # Zadanie się mieści -> Planujemy!
                     end_time = current_time + timedelta(minutes=duration)
 
                     schedule.append(ScheduledItem(
@@ -128,13 +157,16 @@ class SchedulerService:
                     # Przesuwamy czas w oknie
                     current_time = end_time
 
-                    # Usuwamy zadanie z kolejki (zrobione)
+                    # Zadanie zaplanowane: usuwamy z obu list (kolejki okna i głównej puli)
+                    if task in remaining_tasks:
+                        remaining_tasks.remove(task)
+
+                    # Usuwamy z kolejki i NIE inkrementujemy 'i' (bo lista się przesunęła)
                     queue.pop(i)
-                    # Nie inkrementujemy 'i', bo lista się skróciła
                 else:
-                    # Nie mieści się - szukamy dalej w kolejce (może jest krótsze zadanie?)
+                    # Zadanie się nie mieści -> sprawdzamy następne w kolejce (może krótsze wejdzie?)
                     i += 1
 
-            # Koniec okna
+            # Koniec pętli dla danego okna. Przechodzimy do następnego okna.
 
         return schedule

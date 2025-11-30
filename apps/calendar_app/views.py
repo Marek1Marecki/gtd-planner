@@ -30,15 +30,32 @@ def daily_view(request):
     calendar_provider = MockCalendarProvider()
     fixed_events = calendar_provider.get_events(request.user.id, today)
 
-    # 4. Uruchom Silnik Planowania (Scheduler)
+    # 4. Uruchom Scheduler
+    # Pobierz profil
+    try:
+        profile = request.user.profile
+    except:
+        # Fallback (powinien być obsłużony w signals, ale dla bezpieczeństwa)
+        from apps.core.models import UserProfile
+        profile = UserProfile.objects.create(user=request.user)
+
     scheduler = SchedulerService()
 
-    # Krok A: Wyznacz wolne okna (omijając Fixed Events)
-    free_windows = scheduler.calculate_free_windows(today, fixed_events)
+    # Krok A: Wyznacz okna (używając godzin z profilu)
+    windows = scheduler.calculate_free_windows(
+        today,
+        fixed_events,
+        work_start=profile.work_start_hour,  # <-- Z BAZY
+        work_end=profile.work_end_hour  # <-- Z BAZY
+    )
 
-    # Krok B: Alokuj zadania w wolne okna (Bin Packing + Scoring)
-    # Wynik to lista obiektów ScheduledItem
-    schedule = scheduler.schedule_tasks(tasks, free_windows, now)
+    # Krok B: Alokacja (przekazujemy cały profil dla energii)
+    schedule = scheduler.schedule_tasks(
+        tasks,
+        windows,
+        now,
+        user_profile=profile  # <-- Z BAZY
+    )
 
     # 5. Przygotuj dane do wyświetlenia (Timeline Items)
     # Łączymy "Fixed" i "Dynamic" w jedną listę, aby wyświetlić je chronologicznie

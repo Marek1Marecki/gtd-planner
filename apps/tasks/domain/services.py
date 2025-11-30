@@ -53,9 +53,11 @@ class TaskScorer:
             'w_duration': 0.3,
             'w_complexity': 0.3,
             'w_urgency': 1.5,
+            'bonus_energy_match': 0.5,
         }
 
-    def calculate_score(self, task: TaskEntity, now: datetime) -> float:
+    def calculate_score(self, task: TaskEntity, now: datetime, slot_energy_level: int = 1) -> float:
+
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
         norm_priority = (task.priority - 1) / 4.0
 
@@ -103,7 +105,26 @@ class TaskScorer:
         if getattr(task, 'is_critical_path', False):
             cpm_bonus = 2.0  # Bardzo wysoki bonus!
 
-        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + cpm_bonus
+        # ----------------------------------------------------
+        # NOWY KOD: Bonus Energetyczny
+        # ----------------------------------------------------
+        energy_bonus = 0.0
+
+        # Założenie: task.energy_required (1-3), slot_energy_level (1-3)
+        # Jeśli wymagana energia <= dostępna energia -> Bonus!
+        if task.energy_required <= slot_energy_level:
+            # Im trudniejsze zadanie (wymaga więcej energii), tym większy bonus za dopasowanie
+            # Np. Zrobienie trudnego zadania (3) w slocie (3) jest cenniejsze
+            # niż zrobienie łatwego (1) w slocie (3).
+            energy_bonus = self.weights['bonus_energy_match'] * (task.energy_required / 3.0)
+
+        # Jeśli zadanie wymaga więcej niż mamy (np. 3 > 1), można dać karę (opcjonalnie)
+        # elif task.energy_required > slot_energy_level:
+        #     energy_bonus = -0.5
+
+        # Sumowanie
+        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + energy_bonus  # + cpm_bonus
+
         return round(total_score, 4)
 
 

@@ -9,4 +9,5 @@ urlpatterns = [
     path('calendar/', include('apps.calendar_app.urls')),
     path('projects/', include('apps.projects.urls')),
     path('reports/', include('apps.reports.urls')),
+    path('core/', include('apps.core.urls')),
 ]
