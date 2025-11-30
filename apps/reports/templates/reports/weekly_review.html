@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">🧠 Przegląd Tygodniowy</h2>
+
+    <!-- ALERTY -->
+    {% if stale_paused %}
+    <div class="alert alert-warning">
+        <h5><i class="bi bi-exclamation-triangle"></i> Wstrzymane zadania (wymagają uwagi)</h5>
+        <ul class="mb-0">
+            {% for task in stale_paused %}
+                <li>{{ task.title }} (wstrzymane od {{ task.updated_at|date }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Waiting -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">Oczekujące (Waiting)</div>
+                <div class="list-group list-group-flush">
+                    {% for task in waiting_tasks %}
+                    <div class="list-group-item">
+                        <strong>{{ task.title }}</strong><br>
+                        <small class="text-muted">Czekam na...</small>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-success">Otrzymano</button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-muted">Pusto!</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Delegated -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">Delegowane</div>
+                <!-- ... analogicznie ... -->
+            </div>
+        </div>
+
+        <!-- Postponed -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">Odłożone</div>
+                <!-- ... analogicznie ... -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

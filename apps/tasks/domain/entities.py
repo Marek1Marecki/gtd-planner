@@ -41,6 +41,8 @@ class TaskEntity:
     is_private: bool = False
     percent_complete: int = 0  # dla Paused
 
+    is_critical_path: bool = False  # Flaga CPM
+
     # Relacje (tylko ID, żeby nie wiązać obiektów domenowych z ORM)
     project_id: Optional[int] = None
     goal_id: Optional[int] = None

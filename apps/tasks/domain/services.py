@@ -2,7 +2,8 @@
 from typing import List
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone, timedelta
+from apps.tasks.models import Task, RecurringPattern
 
 
 class TaskService:
@@ -96,7 +97,69 @@ class TaskScorer:
             else:
                 urgency_score = 0.1
 
-        # Sumowanie
-        total_score = base_score + (self.weights['w_urgency'] * urgency_score)
+        # 5. Bonus CPM (Critical Path Method)
+        cpm_bonus = 0.0
+        # Musimy dodać pole is_critical_path do TaskEntity! (zrób to w entities.py)
+        if getattr(task, 'is_critical_path', False):
+            cpm_bonus = 2.0  # Bardzo wysoki bonus!
 
+        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + cpm_bonus
         return round(total_score, 4)
+
+
+class RecurrenceService:
+    def generate_daily_instances(self) -> List[Task]:
+        """Sprawdza aktywne szablony i generuje zadania na dziś."""
+        today = date.today()
+        generated = []
+
+        # 1. Pobierz szablony, które mają termin <= dzisiaj
+        patterns = RecurringPattern.objects.filter(
+            is_active=True,
+            next_run_date__lte=today,
+            recurrence_type=RecurringPattern.RecurrenceType.FIXED
+        )
+
+        for pattern in patterns:
+            # Sprawdź, czy nie ma już aktywnego zadania z tego szablonu (Anty-spam)
+            active_exists = Task.objects.filter(
+                recurring_pattern=pattern,
+                status__in=[TaskStatus.TODO, TaskStatus.SCHEDULED, TaskStatus.OVERDUE]
+            ).exists()
+
+            if active_exists:
+                continue  # Nie generuj duplikatu, dopóki stare wisi
+
+            # 2. Utwórz instancję zadania
+            new_task = Task.objects.create(
+                user=pattern.user,
+                title=pattern.title,
+                project=pattern.project,
+                priority=pattern.default_priority,
+                duration_min=pattern.default_duration_min,
+                duration_max=pattern.default_duration_min,  # uproszczenie
+                status=TaskStatus.TODO,
+                recurring_pattern=pattern,
+                due_date=pattern.next_run_date  # Termin to data wygenerowania
+            )
+            generated.append(new_task)
+
+            # 3. Przesuń datę następnego wykonania w szablonie
+            pattern.next_run_date = pattern.next_run_date + timedelta(days=pattern.interval_days)
+            pattern.save()
+
+        return generated
+
+    def handle_task_completion(self, task: Task):
+        """Obsługa trybu DYNAMICZNEGO (po wykonaniu)."""
+        pattern = task.recurring_pattern
+        if not pattern:
+            return
+
+        if pattern.recurrence_type == RecurringPattern.RecurrenceType.DYNAMIC:
+            # Ustaw następną datę relatywnie od DZISIAJ (bo dziś wykonano)
+            today = date.today()
+            pattern.next_run_date = today + timedelta(days=pattern.interval_days)
+            pattern.save()
+            # Uwaga: Nie generujemy zadania od razu.
+            # Zostanie wygenerowane przez generate_daily_instances() gdy nadejdzie czas.

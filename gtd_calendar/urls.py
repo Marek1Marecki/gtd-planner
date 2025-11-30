@@ -7,4 +7,6 @@ urlpatterns = [
     # Tutaj podpinamy nasze aplikacje:
     path('tasks/', include('apps.tasks.urls')),
     path('calendar/', include('apps.calendar_app.urls')),
+    path('projects/', include('apps.projects.urls')),
+    path('reports/', include('apps.reports.urls')),
 ]

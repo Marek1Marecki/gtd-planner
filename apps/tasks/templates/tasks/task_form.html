@@ -1,29 +1,89 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Nowe Zadanie</title>
-</head>
-<body>
-    <h1>Nowe Zadanie (GTD)</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div style="margin-bottom: 10px;">
-            <label>Tytuł:</label><br>
-            <input type="text" name="title" required style="width: 300px;">
-        </div>
+{% extends 'base.html' %}
 
-        <div style="margin-bottom: 10px;">
-            <label>Opis:</label><br>
-            <textarea name="description" style="width: 300px; height: 100px;"></textarea>
-        </div>
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h3 class="card-title mb-0">Nowe Zadanie (GTD)</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Tytuł -->
+                        <div class="mb-3">
+                            <label for="id_title" class="form-label fw-bold">Tytuł</label>
+                            <input type="text" name="title" id="id_title" class="form-control" required placeholder="Co trzeba zrobić?">
+                        </div>
+                        
+                        <!-- Projekt -->
+                        <div class="mb-3">
+                            <label for="id_project" class="form-label">Projekt</label>
+                            <select name="project_id" id="id_project" class="form-select">
+                                <option value="">-- Bez projektu (Inbox) --</option>
+                                {% for p in projects %}
+                                    <option value="{{ p.id }}">{{ p.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Przypisz do projektu, aby śledzić postępy.</div>
+                        </div>
+                        
+                        <!-- Opis -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Opis</label>
+                            <textarea name="description" id="id_description" class="form-control" rows="3"></textarea>
+                        </div>
+                        
+                        <!-- Czas -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_duration_min" class="form-label">Czas min (minuty)</label>
+                                <input type="number" name="duration_min" id="id_duration_min" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_duration_max" class="form-label">Czas max (minuty)</label>
+                                <input type="number" name="duration_max" id="id_duration_max" class="form-control">
+                            </div>
+                        </div>
 
-        <div style="margin-bottom: 10px;">
-            <label>Czas min (minuty):</label><br>
-            <input type="number" name="duration_min">
-        </div>
+                        <!-- Energia i Typ -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Wymagana Energia</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy1" value="1">
+                                    <label class="btn btn-outline-success" for="energy1">🟢 Niska</label>
 
-        <button type="submit">Zapisz do Inbox</button>
-    </form>
-    <p><a href="{% url 'task_list' %}">Anuluj</a></p>
-</body>
-</html>
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy2" value="2" checked>
+                                    <label class="btn btn-outline-warning" for="energy2">🟡 Średnia</label>
+
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy3" value="3">
+                                    <label class="btn btn-outline-danger" for="energy3">🔴 Wysoka</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Kontekst</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
+                                    <label class="form-check-label" for="is_private">🏠 Zadanie Prywatne</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Przyciski -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="{% url 'task_list' %}" class="text-decoration-none text-muted">Anuluj</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Zapisz do Inbox
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

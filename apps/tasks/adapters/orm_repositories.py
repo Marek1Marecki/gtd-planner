@@ -20,7 +20,9 @@ class DjangoTaskRepository(ITaskRepository):
             energy_required=model.energy_required,
             complexity=model.complexity,
             is_private=model.is_private,
-            percent_complete=model.percent_complete
+            percent_complete=model.percent_complete,
+            is_critical_path=model.is_critical_path,
+            project_id=model.project_id if model.project_id else None
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
@@ -43,15 +45,19 @@ class DjangoTaskRepository(ITaskRepository):
             'energy_required': task.energy_required,
             'complexity': task.complexity,
             'is_private': task.is_private,
-            'percent_complete': task.percent_complete
+            'percent_complete': task.percent_complete,
+            'is_critical_path': task.is_critical_path,
+            'project_id': task.project_id
         }
 
         if task.id:
-            # Aktualizacja istniejącego zadania
+            # Aktualizacja istniejącego
             TaskModel.objects.filter(id=task.id).update(**data)
             obj = TaskModel.objects.get(id=task.id)
         else:
-            # Tworzenie nowego zadania (wymaga user_id)
+            # Tworzenie nowego (wymaga user_id)
+            if user_id is None:
+                raise ValueError("user_id is required for creating a new task")
             obj = TaskModel.objects.create(user_id=user_id, **data)
 
         return self.to_entity(obj)
@@ -82,7 +88,7 @@ class DjangoTaskRepository(ITaskRepository):
             active_blockers_count = task.blocked_by.exclude(
                 status__in=[
                     TaskStatus.DONE.value,
-                    TaskStatus.CANCELLED.value
+                    'cancelled'
                 ]
             ).count()
 

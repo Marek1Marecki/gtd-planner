@@ -1,0 +1,26 @@
+<!-- project_node.html -->
+<li class="list-group-item border-0 ps-0">
+    <div class="d-flex align-items-center">
+        <!-- Ikona folderu -->
+        <i class="bi bi-folder2-open me-2 text-warning"></i>
+
+        <!-- Link do projektu -->
+        <a href="{% url 'project_detail' project.pk %}" class="text-decoration-none text-dark flex-grow-1">
+            {{ project.title }}
+        </a>
+
+        <!-- Badge statusu -->
+        {% if project.status == 'completed' %}
+            <span class="badge bg-success ms-2">Done</span>
+        {% endif %}
+    </div>
+
+    <!-- REKURENCJA: Jeśli są podprojekty, wyświetl je w zagnieżdżonej liście -->
+    {% if project.subprojects.all %}
+        <ul class="list-group ms-4 mt-2 border-start ps-2">
+            {% for sub in project.subprojects.all %}
+                {% include "projects/project_node.html" with project=sub %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

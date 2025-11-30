@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Nowy Projekt</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Nazwa projektu</label>
+        <input type="text" name="title" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Projekt nadrzędny (opcjonalnie)</label>
+        <select name="parent_id" class="form-select">
+            <option value="">-- Brak (Projekt Główny) --</option>
+            {% for p in all_projects %}
+                <option value="{{ p.id }}">{{ p.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</form>
+{% endblock %}

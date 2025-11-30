@@ -29,18 +29,26 @@
         <hr>
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="#" class="nav-link text-white" hx-get="/calendar/" hx-target="#main-view" hx-push-url="true">
+                <!-- Kalendarz używa HTMX -->
+                <a href="#" class="nav-link text-white" hx-get="{% url 'calendar_daily' %}" hx-target="#main-view" hx-push-url="true">
                     <i class="bi bi-calendar-week me-2"></i> Kalendarz
                 </a>
             </li>
             <li>
+                <!-- Zadania (zwykły link, choć można zmienić na hx-get) -->
                 <a href="{% url 'task_list' %}" class="nav-link text-white">
                     <i class="bi bi-list-check me-2"></i> Zadania
                 </a>
             </li>
             <li>
-                <a href="#" class="nav-link text-white">
+                <!-- NOWY LINK: Projekty -->
+                <a href="{% url 'project_list' %}" class="nav-link text-white">
                     <i class="bi bi-folder me-2"></i> Projekty
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'weekly_review' %}" class="nav-link text-white">
+                    <i class="bi bi-bullseye me-2"></i> Przegląd
                 </a>
             </li>
         </ul>
