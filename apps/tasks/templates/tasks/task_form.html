@@ -66,6 +66,13 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">Kontekst</label>
+                                <select name="context_id" class="form-select">
+                                    <option value="">-- Brak --</option>
+                                    {% for c in contexts %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+
                                 <div class="form-check form-switch mt-2">
                                     <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
                                     <label class="form-check-label" for="is_private">🏠 Zadanie Prywatne</label>

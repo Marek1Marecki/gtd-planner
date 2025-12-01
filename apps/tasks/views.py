@@ -4,8 +4,10 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from .adapters.orm_repositories import DjangoTaskRepository
 from .application.use_cases import CreateTaskUseCase, CreateTaskInput
-from .models import Task  # Import modelu do prostego odczytu listy
+from .models import Task
 from apps.projects.models import Project
+from apps.contexts.models import Context
+from .filters import TaskFilter
 
 
 @login_required
@@ -28,9 +30,13 @@ def task_create_view(request):
         project_id = request.POST.get('project_id')
         energy = request.POST.get('energy_required')
         is_private = request.POST.get('is_private') == 'on'
+        context_id = request.POST.get('context_id')
 
         # Konwersja project_id (pusty string -> None)
         project_id_int = int(project_id) if project_id else None
+
+        # Konwersja na int lub None (bo string "" to nie None)
+        ctx_id_val = int(context_id) if context_id else None
 
         # 1. Przygotowanie DTO (Data Transfer Object)
         input_dto = CreateTaskInput(
@@ -41,7 +47,8 @@ def task_create_view(request):
             duration_max=int(d_max) if d_max else None,
             project_id=project_id_int,
             energy_required=int(energy) if energy else 2,
-            is_private=is_private
+            is_private=is_private,
+            context_id=ctx_id_val
         )
 
         # 2. Złożenie Use Case (Manual Dependency Injection)
@@ -63,7 +70,20 @@ def task_create_view(request):
     # GET: Wyświetl formularz
     # Pobieramy projekty użytkownika do listy rozwijanej
     projects = Project.objects.filter(user=request.user).order_by('title')
+    contexts = Context.objects.filter(user=request.user, is_active=True)
 
     return render(request, 'tasks/task_form.html', {
-        'projects': projects
+        'projects': projects,
+        'contexts': contexts
     })
+
+
+@login_required
+def task_search_view(request):
+    # Pobieramy wszystkie zadania użytkownika
+    # (Możemy tu dodać .select_related('context', 'project') dla optymalizacji)
+    qs = Task.objects.filter(user=request.user).select_related('context', 'project').order_by('-created_at')
+
+    f = TaskFilter(request.GET, queryset=qs)
+
+    return render(request, 'tasks/task_search.html', {'filter': f})

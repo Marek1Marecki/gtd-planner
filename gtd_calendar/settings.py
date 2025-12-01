@@ -48,17 +48,19 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Nasze aplikacje
-    'apps.core.apps.CoreConfig', # Pełna ścieżka do configu
-    'apps.tasks.apps.TasksConfig', # Zmieniamy 'tasks' na pełną ścieżkę do Configu
-    'apps.projects',
-    'apps.goals',
-    'apps.calendar_app',
+    'apps.core.apps.CoreConfig',
+    'apps.tasks.apps.TasksConfig',
+    'apps.projects.apps.ProjectsConfig',
+    'apps.goals.apps.GoalsConfig',
+    'apps.calendar_app.apps.CalendarAppConfig',
     'apps.reports.apps.ReportsConfig',
-    'apps.notifications',
-    'apps.notes',
+    'apps.notifications.apps.NotificationsConfig',
+    'apps.notes.apps.NotesConfig',
+    'apps.contexts.apps.ContextsConfig',
 
     # Biblioteki zewnętrzne
     'django_filters',  # Warto dodać, przyda się do API
+    'widget_tweaks',  # Biblioteka do renderowania widgetów
 ]
 
 MIDDLEWARE = [

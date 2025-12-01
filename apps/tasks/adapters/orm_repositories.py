@@ -22,7 +22,8 @@ class DjangoTaskRepository(ITaskRepository):
             is_private=model.is_private,
             percent_complete=model.percent_complete,
             is_critical_path=model.is_critical_path,
-            project_id=model.project_id if model.project_id else None
+            project_id=model.project_id if model.project_id else None,
+            context_id=model.context_id if model.context_id else None
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
@@ -47,7 +48,8 @@ class DjangoTaskRepository(ITaskRepository):
             'is_private': task.is_private,
             'percent_complete': task.percent_complete,
             'is_critical_path': task.is_critical_path,
-            'project_id': task.project_id
+            'project_id': task.project_id,
+            'context_id': task.context_id
         }
 
         if task.id:

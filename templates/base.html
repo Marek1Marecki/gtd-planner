@@ -46,6 +46,11 @@
                 </a>
             </li>
             <li>
+                <a href="{% url 'task_search' %}" class="nav-link text-white">
+                    <i class="bi bi-search me-2"></i> Szukaj
+                </a>
+            </li>
+            <li>
                 <!-- NOWY LINK: Projekty -->
                 <a href="{% url 'project_list' %}"
                    class="nav-link text-white {% if request.resolver_match.url_name == 'project_list' %}active bg-primary{% endif %}">

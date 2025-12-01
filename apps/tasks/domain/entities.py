@@ -46,6 +46,8 @@ class TaskEntity:
     # Relacje (tylko ID, żeby nie wiązać obiektów domenowych z ORM)
     project_id: Optional[int] = None
     goal_id: Optional[int] = None
+    context_id: Optional[int] = None
+
 
     @property
     def duration_expected(self) -> int:

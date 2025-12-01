@@ -107,6 +107,21 @@ class Task(models.Model):
         help_text="Kiedy przypomnieć o tym zadaniu?"
     )
 
+    # Kontekst (Zazwyczaj jeden, np. "Gdzie jestem?")
+    context = models.ForeignKey(
+        'contexts.Context',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='tasks'
+    )
+
+    # Tagi (Wiele, np. "Czego dotyczy?")
+    tags = models.ManyToManyField(
+        'contexts.Tag',
+        blank=True,
+        related_name='tasks'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
