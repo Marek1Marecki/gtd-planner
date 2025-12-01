@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Witaj, {{ user.username }}! 👋</h1>
+    <p class="text-muted">Dziś jest {{ today|date:"l, d F Y" }}</p>
+
+    <!-- KAFELKI STATYSTYK -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="display-4 fw-bold">{{ tasks_overdue }}</h2>
+                        <p class="mb-0">Przeterminowane</p>
+                    </div>
+                    <i class="bi bi-exclamation-octagon fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="display-4 fw-bold">{{ tasks_inbox }}</h2>
+                        <p class="mb-0">W Inboxie</p>
+                    </div>
+                    <i class="bi bi-inbox fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="display-4 fw-bold">--</h2> <!-- Tu by się przydało zliczyć z Schedulera -->
+                        <p class="mb-0">Zaplanowane na dziś</p>
+                    </div>
+                    <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+                </div>
+                <div class="card-footer bg-white text-primary border-0">
+                    <a href="{% url 'calendar_daily' %}" class="text-decoration-none fw-bold stretched-link">Zobacz plan ></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AKTYWNE PROJEKTY -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">Ostatnie Projekty</div>
+        <ul class="list-group list-group-flush">
+            {% for project in projects %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{% url 'project_detail' project.pk %}" class="text-decoration-none text-dark fw-bold">
+                    {{ project.title }}
+                </a>
+                <span class="badge bg-secondary rounded-pill">W trakcie</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Brak aktywnych projektów.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 
 # Importy z innych aplikacji (Modularność!)
 from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
-from apps.calendar_app.adapters.mock_calendar import MockCalendarProvider
+from .adapters.google_calendar import GoogleCalendarAdapter
 from apps.calendar_app.domain.services import SchedulerService
 
 
@@ -27,7 +27,7 @@ def daily_view(request):
 
     # 3. Pobierz Zadania Sztywne (Fixed Events) z Kalendarza
     # Na razie Mock, docelowo Google Calendar API
-    calendar_provider = MockCalendarProvider()
+    calendar_provider = GoogleCalendarAdapter()
     fixed_events = calendar_provider.get_events(request.user.id, today)
 
     # 4. Uruchom Scheduler
