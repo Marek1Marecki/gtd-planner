@@ -53,5 +53,33 @@
             </div>
         </div>
     </div>
+
+
+    <p>Debug: Liczba zadań do przeglądu: {{ due_review|length }}</p>
+    <!-- Sekcja Tickler (Pilne przypomnienia) -->
+    {% if due_review %}
+    <div class="alert alert-info mb-4">
+        <h4><i class="bi bi-bell"></i> Przypomnienia na dziś (Tickler)</h4>
+        <div class="list-group">
+            {% for task in due_review %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ task.title }}</strong>
+                    <span class="badge bg-secondary">{{ task.get_status_display }}</span>
+                    <br>
+                    <small class="text-muted">Data przeglądu: {{ task.review_date }}</small>
+                </div>
+                <div>
+                    <!-- Akcje: Aktywuj lub Przełóż -->
+                    <a href="#" class="btn btn-sm btn-success">Aktywuj (Todo)</a>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">Przełóż +1 tydz</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
 </div>
+
 {% endblock %}

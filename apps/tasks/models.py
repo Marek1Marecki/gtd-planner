@@ -101,6 +101,12 @@ class Task(models.Model):
         related_name='generated_tasks'
     )
 
+    review_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Kiedy przypomnieć o tym zadaniu?"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

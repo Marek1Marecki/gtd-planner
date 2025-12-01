@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-bar-chart-line"></i> Raporty i Statystyki</h2>
+
+    <div class="row">
+        <!-- Wykres 1: Status Zadań -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">Status Zadań (Snapshot)</div>
+                <div class="card-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wykres 2: Aktywność (Placeholder na przyszłość) -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">Twoja Produktywność</div>
+                <div class="card-body text-center py-5">
+                    <h3 class="display-4" id="completedCount">--</h3>
+                    <p class="text-muted">Zadań ukończonych w ostatnich 7 dniach</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Pobierz dane z naszego API
+        fetch("{% url 'stats_api' %}")
+            .then(response => response.json())
+            .then(data => {
+
+                // 2. Aktualizuj licznik
+                document.getElementById('completedCount').innerText = data.completed;
+
+                // 3. Przygotuj dane do wykresu
+                // data.breakdown to np. {"todo": 5, "done": 2, "waiting": 1}
+                const labels = Object.keys(data.breakdown);
+                const values = Object.values(data.breakdown);
+
+                // Kolory dla statusów (opcjonalnie można rozbudować)
+                const colors = {
+                    'todo': '#ffc107', // yellow
+                    'done': '#198754', // green
+                    'waiting': '#0dcaf0', // cyan
+                    'blocked': '#dc3545', // red
+                    'scheduled': '#0d6efd' // blue
+                };
+                const bgColors = labels.map(label => colors[label] || '#6c757d'); // szary domyślny
+
+                // 4. Rysuj Wykres Kołowy (Doughnut)
+                const ctx = document.getElementById('statusChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: bgColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Błąd pobierania statystyk:', error));
+    });
+</script>
+{% endblock %}
