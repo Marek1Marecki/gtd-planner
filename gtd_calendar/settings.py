@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'apps.projects',
     'apps.goals',
     'apps.calendar_app',
-    'apps.reports',
+    'apps.reports.apps.ReportsConfig',
     'apps.notifications',
     'apps.notes',
 

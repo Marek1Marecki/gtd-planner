@@ -1,5 +1,5 @@
 # apps/projects/domain/services.py
-from typing import List, Dict, Optional
+from typing import List, Dict
 from dataclasses import dataclass
 
 
@@ -26,21 +26,30 @@ class CPMService:
         """
         node_map = {t.task_id: t for t in tasks}
 
-        # 1. Forward Pass (ES, EF)
-        # Sortujemy topologicznie (uproszczone: pętla wielokrotna lub rekurencja z memoizacją)
-        # Dla uproszczenia załóżmy, że graf jest acykliczny.
+        # Jeśli graf jest pusty, zwróć pusty słownik
+        if not node_map:
+            return {}
 
+        # ---------------------------
+        # 1. Forward Pass (ES, EF)
+        # ---------------------------
         processed = set()
 
         def calc_forward(node_id):
             if node_id in processed: return
-            node = node_map[node_id]
+
+            # Zabezpieczenie: jeśli węzeł nie istnieje (np. został usunięty/zakończony), ignoruj
+            node = node_map.get(node_id)
+            if not node: return
 
             max_predecessor_ef = 0
             for dep_id in node.dependencies:
-                calc_forward(dep_id)  # Rekurencja
-                if node_map[dep_id].ef > max_predecessor_ef:
-                    max_predecessor_ef = node_map[dep_id].ef
+                calc_forward(dep_id)
+
+                # Zabezpieczenie: bierzemy pod uwagę tylko istniejące zależności
+                if dep_id in node_map:
+                    if node_map[dep_id].ef > max_predecessor_ef:
+                        max_predecessor_ef = node_map[dep_id].ef
 
             node.es = max_predecessor_ef
             node.ef = node.es + node.duration
@@ -49,32 +58,38 @@ class CPMService:
         for tid in node_map:
             calc_forward(tid)
 
+        # ---------------------------
         # 2. Backward Pass (LS, LF)
-        project_duration = max((n.ef for n in tasks), default=0)
+        # ---------------------------
+        # Czas trwania projektu to maksymalny EF
+        project_duration = max((n.ef for n in node_map.values()), default=0)
         processed = set()
 
-        # Znajdź zadania końcowe (te, od których nic nie zależy) - albo po prostu iteruj wstecz
-        # Tutaj musimy znać następników (Successors). Zbudujmy mapę odwrotną.
+        # Budowa mapy odwrotnej (Successors) dla łatwiejszego przeszukiwania
         successors = {tid: [] for tid in node_map}
-        for node in tasks:
+        for node in node_map.values():
             for dep_id in node.dependencies:
-                successors[dep_id].append(node.task_id)
+                if dep_id in successors:
+                    successors[dep_id].append(node.task_id)
 
         def calc_backward(node_id):
             if node_id in processed: return
-            node = node_map[node_id]
+
+            node = node_map.get(node_id)
+            if not node: return
 
             min_successor_ls = project_duration
 
-            my_successors = successors[node_id]
+            my_successors = successors.get(node_id, [])
             if not my_successors:
-                # To jest zadanie końcowe
+                # Zadanie końcowe (nie ma następców w grafie)
                 node.lf = project_duration
             else:
                 for succ_id in my_successors:
                     calc_backward(succ_id)
-                    if node_map[succ_id].ls < min_successor_ls:
-                        min_successor_ls = node_map[succ_id].ls
+                    if succ_id in node_map:
+                        if node_map[succ_id].ls < min_successor_ls:
+                            min_successor_ls = node_map[succ_id].ls
                 node.lf = min_successor_ls
 
             node.ls = node.lf - node.duration

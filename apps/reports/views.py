@@ -1,6 +1,15 @@
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from apps.tasks.models import Task
+from .domain.services import ReportService
+
+
+@login_required
+def stats_api_view(request):
+    service = ReportService()
+    data = service.get_weekly_stats(request.user)
+    return JsonResponse(data)
 
 
 @login_required
