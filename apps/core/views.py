@@ -8,6 +8,8 @@ from .models import GoogleCredentials, UserProfile
 import os
 from datetime import date
 from apps.tasks.models import Task
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse
 
 
 # Ścieżka do pliku JSON
@@ -122,3 +124,25 @@ def dashboard_view(request):
         'projects': active_projects,
         'today': today
     })
+
+
+@require_http_methods(["POST"])
+@login_required
+def set_work_mode_view(request):
+    mode = request.POST.get('mode')  # 'normal', 'focus', 'light'
+    profile = request.user.profile
+
+    if mode == 'focus':
+        profile.morning_buffer_minutes = 15
+        profile.between_tasks_buffer_minutes = 0  # Bez przerw!
+    elif mode == 'light':
+        profile.morning_buffer_minutes = 45
+        profile.between_tasks_buffer_minutes = 15  # Dużo luzu
+    else:  # normal
+        profile.morning_buffer_minutes = 30
+        profile.between_tasks_buffer_minutes = 5
+
+    profile.save()
+
+    # Zwróć tylko fragment HTML z informacją (np. Toast lub badge)
+    return HttpResponse(f'<span class="badge bg-secondary">Tryb: {mode.title()}</span>')

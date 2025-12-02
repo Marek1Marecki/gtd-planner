@@ -25,18 +25,47 @@
                 <tr>
                     <td>{{ task.title }}</td>
                     <td>
-                        <span class="badge 
-                            {% if task.status == 'todo' %}bg-warning text-dark
-                            {% elif task.status == 'done' %}bg-success
-                            {% elif task.status == 'blocked' %}bg-danger
-                            {% else %}bg-secondary{% endif %}">
-                            {{ task.get_status_display }}
-                        </span>
+                        {% if task.status == 'blocked' %}
+                            <span class="badge bg-danger" data-bs-toggle="tooltip" data-bs-html="true"
+                                  title="Blokowane przez: <br> {% for b in task.blocked_by.all %}- {{ b.title }}<br>{% endfor %}">
+                                <i class="bi bi-slash-circle"></i> Zablokowane
+                            </span>
+                        {% else %}
+                            <span class="badge ...">{{ task.get_status_display }}</span>
+                        {% endif %}
                     </td>
                     <td>{{ task.duration_min|default:"-" }} min</td>
                     <td>{{ task.priority }}</td>
+                    <!-- Kolumna Akcje -->
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary">Edytuj</button>
+                        <!-- Przycisk Zrobione -->
+                        {% if task.status != 'done' %}
+                            <button class="btn btn-sm btn-outline-success"
+                                    hx-post="{% url 'task_complete' task.pk %}"
+                                    hx-swap="outerHTML">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- Przycisk Na Dziś (Tylko dla Todo/Inbox) -->
+                        {% if task.status == 'todo' or task.status == 'inbox' %}
+                            <button class="btn btn-sm btn-outline-primary" title="Na Dziś"
+                                    hx-post="{% url 'task_force_today' task.pk %}"
+                                    hx-swap="outerHTML">
+                                <i class="bi bi-pin-angle-fill"></i>
+                            </button>
+                        {% endif %}
+
+                        {% if task.status == 'paused' %}
+                            <button class="btn btn-sm btn-outline-primary" title="Wznów"
+                                    hx-post="{% url 'task_resume' task.pk %}"
+                                    hx-swap="outerHTML">
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                        {% endif %}
+
+                        <!-- Edycja -->
+                        <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                     </td>
                 </tr>
                 {% empty %}

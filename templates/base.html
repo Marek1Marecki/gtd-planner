@@ -75,6 +75,26 @@
             </li>
         </ul>
         <hr>
+
+        <!-- Tryb Pracy -->
+        <div class="px-3 mb-3">
+            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Tryb Pracy</small>
+            <div class="btn-group w-100 mt-1" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "normal"}' hx-swap="none">
+                    Norm
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "focus"}' hx-swap="none" title="Fokus">
+                    🔥
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "light"}' hx-swap="none" title="Luz">
+                    🍃
+                </button>
+            </div>
+        </div>
+
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
                 <strong>{{ user.username }}</strong>
@@ -118,6 +138,15 @@
         });
     </script>
 
+    <script>
+        // Inicjalizacja Tooltipów (również po ładowaniu HTMX)
+        document.body.addEventListener('htmx:load', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
 
 </body>
 </html>
