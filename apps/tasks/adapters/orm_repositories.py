@@ -33,7 +33,7 @@ class DjangoTaskRepository(ITaskRepository):
         except TaskModel.DoesNotExist:
             return None
 
-    def save(self, task: TaskEntity, user_id: int) -> TaskEntity:
+    def save(self, task: TaskEntity, user_id: int = None) -> TaskEntity:
         data = {
             'title': task.title,
             'description': task.description,

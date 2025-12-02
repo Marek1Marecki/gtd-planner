@@ -99,7 +99,13 @@
                             <strong>{{ task.title }}</strong>
                             <div class="small text-muted">{{ task.duration_expected }} min | P: {{ task.priority }}</div>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></button>
+                        <button class="btn btn-sm btn-outline-primary"
+                                title="Przypnij do dziś (Wymuś)"
+                                hx-post="{% url 'task_force_today' task.id %}"
+                                hx-swap="none"
+                                hx-on="htmx:afterRequest: window.location.reload()"> <!-- Najprostsze: przeładuj, żeby zobaczyć zmianę w kalendarzu -->
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
                     </li>
                     {% empty %}
                     <li class="list-group-item text-muted text-center py-3">Wszystkie zadania zaplanowane! 🎉</li>

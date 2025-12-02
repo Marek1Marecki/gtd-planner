@@ -65,7 +65,9 @@
                         {% endif %}
 
                         <!-- Edycja -->
-                        <a href="#" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                     </td>
                 </tr>
                 {% empty %}

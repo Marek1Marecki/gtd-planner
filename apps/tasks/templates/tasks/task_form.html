@@ -6,45 +6,64 @@
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="card-title mb-0">Nowe Zadanie (GTD)</h3>
+                    <h3 class="card-title mb-0">
+                        {% if task %}Edytuj Zadanie{% else %}Nowe Zadanie (GTD){% endif %}
+                    </h3>
                 </div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
-                        
+
                         <!-- Tytuł -->
                         <div class="mb-3">
                             <label for="id_title" class="form-label fw-bold">Tytuł</label>
-                            <input type="text" name="title" id="id_title" class="form-control" required placeholder="Co trzeba zrobić?">
+                            <input type="text" name="title" id="id_title" class="form-control" required
+                                   value="{{ task.title|default:'' }}" placeholder="Co trzeba zrobić?">
                         </div>
-                        
+
                         <!-- Projekt -->
                         <div class="mb-3">
                             <label for="id_project" class="form-label">Projekt</label>
                             <select name="project_id" id="id_project" class="form-select">
                                 <option value="">-- Bez projektu (Inbox) --</option>
                                 {% for p in projects %}
-                                    <option value="{{ p.id }}">{{ p.title }}</option>
+                                    <option value="{{ p.id }}" {% if task.project_id == p.id %}selected{% endif %}>
+                                        {{ p.title }}
+                                    </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Przypisz do projektu, aby śledzić postępy.</div>
                         </div>
-                        
+
+                        <!-- Kontekst -->
+                        <div class="mb-3">
+                            <label class="form-label">Kontekst (Gdzie?)</label>
+                            <select name="context_id" class="form-select">
+                                <option value="">-- Brak --</option>
+                                {% for c in contexts %}
+                                    <option value="{{ c.id }}" {% if task.context_id == c.id %}selected{% endif %}>
+                                        {{ c.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <!-- Opis -->
                         <div class="mb-3">
                             <label for="id_description" class="form-label">Opis</label>
-                            <textarea name="description" id="id_description" class="form-control" rows="3"></textarea>
+                            <textarea name="description" id="id_description" class="form-control" rows="3">{{ task.description|default:'' }}</textarea>
                         </div>
-                        
+
                         <!-- Czas -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="id_duration_min" class="form-label">Czas min (minuty)</label>
-                                <input type="number" name="duration_min" id="id_duration_min" class="form-control">
+                                <input type="number" name="duration_min" id="id_duration_min" class="form-control"
+                                       value="{{ task.duration_min|default:'' }}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="id_duration_max" class="form-label">Czas max (minuty)</label>
-                                <input type="number" name="duration_max" id="id_duration_max" class="form-control">
+                                <input type="number" name="duration_max" id="id_duration_max" class="form-control"
+                                       value="{{ task.duration_max|default:'' }}">
                             </div>
                         </div>
 
@@ -53,28 +72,25 @@
                             <div class="col-md-6">
                                 <label class="form-label">Wymagana Energia</label>
                                 <div class="btn-group w-100" role="group">
-                                    <input type="radio" class="btn-check" name="energy_required" id="energy1" value="1">
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy1" value="1"
+                                           {% if task.energy_required == 1 %}checked{% endif %}>
                                     <label class="btn btn-outline-success" for="energy1">🟢 Niska</label>
 
-                                    <input type="radio" class="btn-check" name="energy_required" id="energy2" value="2" checked>
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy2" value="2"
+                                           {% if not task or task.energy_required == 2 %}checked{% endif %}>
                                     <label class="btn btn-outline-warning" for="energy2">🟡 Średnia</label>
 
-                                    <input type="radio" class="btn-check" name="energy_required" id="energy3" value="3">
+                                    <input type="radio" class="btn-check" name="energy_required" id="energy3" value="3"
+                                           {% if task.energy_required == 3 %}checked{% endif %}>
                                     <label class="btn btn-outline-danger" for="energy3">🔴 Wysoka</label>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Kontekst</label>
-                                <select name="context_id" class="form-select">
-                                    <option value="">-- Brak --</option>
-                                    {% for c in contexts %}
-                                        <option value="{{ c.id }}">{{ c.name }}</option>
-                                    {% endfor %}
-                                </select>
-
                                 <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
+                                    <input class="form-check-input" type="checkbox" id="is_private" name="is_private"
+                                           {% if task.is_private %}checked{% endif %}>
                                     <label class="form-check-label" for="is_private">🏠 Zadanie Prywatne</label>
                                 </div>
                             </div>
@@ -84,7 +100,7 @@
                         <div class="d-flex justify-content-between align-items-center mt-4">
                             <a href="{% url 'task_list' %}" class="text-decoration-none text-muted">Anuluj</a>
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-save me-1"></i> Zapisz do Inbox
+                                <i class="bi bi-save me-1"></i> Zapisz
                             </button>
                         </div>
                     </form>

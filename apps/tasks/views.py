@@ -12,6 +12,7 @@ from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from apps.tasks.domain.services import TaskService
+from .domain.entities import TaskEntity, TaskStatus
 
 
 @login_required
@@ -134,3 +135,53 @@ def task_resume_view(request, pk):
         return HttpResponse('<span class="badge bg-warning text-dark">Wznowiono!</span>')
 
     return HttpResponse('Błąd', status=400)
+
+
+@login_required
+def task_edit_view(request, pk):
+    # 1. Pobierz zadanie (zabezpieczenie, że należy do usera)
+    task_model = get_object_or_404(Task, pk=pk, user=request.user)
+
+    # Inicjalizacja repo
+    repo = DjangoTaskRepository()
+
+    if request.method == "POST":
+        # 2. Pobierz dane z formularza
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        d_min = request.POST.get('duration_min')
+        d_max = request.POST.get('duration_max')
+        project_id = request.POST.get('project_id')
+        context_id = request.POST.get('context_id')
+        energy = request.POST.get('energy_required')
+        is_private = request.POST.get('is_private') == 'on'
+
+        # 3. Zaktualizuj Encję (Tworzymy obiekt z ID, co wymusi UPDATE w repo)
+        updated_task = TaskEntity(
+            id=task_model.id,  # WAŻNE: Przekazujemy ID
+            title=title,
+            description=description,
+            status=TaskStatus(task_model.status),  # Zachowujemy stary status
+            duration_min=int(d_min) if d_min else None,
+            duration_max=int(d_max) if d_max else None,
+            project_id=int(project_id) if project_id else None,
+            context_id=int(context_id) if context_id else None,
+            energy_required=int(energy) if energy else 2,
+            is_private=is_private,
+            percent_complete=task_model.percent_complete
+        )
+
+        # 4. Zapisz (Repozytorium wykryje ID i zrobi UPDATE)
+        repo.save(updated_task)  # user_id nie jest potrzebne przy update
+
+        return redirect('task_list')
+
+    # GET: Pobierz dane do formularza
+    projects = Project.objects.filter(user=request.user)
+    contexts = Context.objects.filter(user=request.user, is_active=True)
+
+    return render(request, 'tasks/task_form.html', {
+        'task': task_model,  # Przekazujemy obiekt do wstępnego wypełnienia
+        'projects': projects,
+        'contexts': contexts
+    })
