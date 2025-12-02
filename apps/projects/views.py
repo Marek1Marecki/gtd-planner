@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Project
 from apps.tasks.models import Task  # Potrzebne do wyświetlenia zadań w projekcie
+from apps.notes.models import Note
+from .domain.prediction import ProjectPredictor
 
 
 @login_required
@@ -31,10 +33,32 @@ def project_detail_view(request, pk):
     completed = tasks.filter(status='done').count()
     progress = int((completed / total) * 100) if total > 0 else 0
 
+    # --- NOWE: Pobierz notatki ---
+    # Używamy related_name='notes' zdefiniowanego w modelu Note
+    notes = project.notes.all().order_by('-updated_at')
+
+    # --- NOWE: Predykcja ---
+    active_tasks = project.tasks.filter(status__in=['todo', 'scheduled', 'blocked'])
+
+    # Pobierz capacity z profilu (jeśli mamy takie pole, lub użyj stałej)
+    # user_capacity = request.user.profile.daily_project_hours * 60
+    predictor = ProjectPredictor(daily_capacity_minutes=4 * 60)
+
+    projected_date = predictor.predict_completion_date(active_tasks)
+
+    # Sprawdź ryzyko
+    risk_alert = False
+    if project.deadline and projected_date > project.deadline:
+        risk_alert = True
+
     return render(request, 'projects/project_detail.html', {
         'project': project,
         'tasks': tasks,
-        'progress': progress
+        'progress': progress,
+        'notes': notes,
+        # Nowe dane:
+        'projected_date': projected_date,
+        'risk_alert': risk_alert
     })
 
 

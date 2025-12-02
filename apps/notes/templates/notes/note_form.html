@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title mb-4">Nowa Notatka</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Tytuł</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Treść</label>
+                    <textarea name="content" class="form-control" rows="10"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Projekt (opcjonalnie)</label>
+                    <select name="project_id" class="form-select">
+                        <option value="">-- Brak --</option>
+                        {% for p in projects %}
+                            <option value="{{ p.id }}">{{ p.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

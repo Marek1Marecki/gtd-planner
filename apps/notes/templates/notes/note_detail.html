@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'note_list' %}" class="text-decoration-none text-muted mb-3 d-inline-block">
+        <i class="bi bi-arrow-left"></i> Wróć do listy
+    </a>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="card-title display-6">{{ note.title }}</h1>
+            <hr>
+            <div class="card-text fs-5" style="white-space: pre-wrap;">{{ note.content }}</div>
+        </div>
+        {% if note.project %}
+        <div class="card-footer">
+            Projekt: <a href="{% url 'project_detail' note.project.pk %}">{{ note.project.title }}</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
