@@ -77,6 +77,11 @@ def daily_view(request):
     scheduled_task_ids = set()
     for item in schedule:
         duration_min = int((item.end - item.start).total_seconds() / 60)
+
+        # Kolor bierzemy bezpośrednio z encji
+        # Domyślny niebieski, jeśli brak obszaru
+        task_color = item.task.area_color or "#0d6efd"
+
         timeline_items.append({
             'title': item.task.title,
             'start': item.start,
@@ -84,6 +89,7 @@ def daily_view(request):
             'type': 'dynamic',
             'duration': duration_min,
             'priority': item.task.priority,
+            'color': task_color,
         })
         scheduled_task_ids.add(item.task.id)
 

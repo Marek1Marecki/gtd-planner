@@ -47,6 +47,8 @@ class TaskEntity:
     project_id: Optional[int] = None
     goal_id: Optional[int] = None
     context_id: Optional[int] = None
+    area_id: Optional[int] = None
+    area_color: Optional[str] = None
 
 
     @property

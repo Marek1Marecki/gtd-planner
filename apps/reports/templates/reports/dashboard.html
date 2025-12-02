@@ -26,6 +26,16 @@
             </div>
         </div>
     </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Balans Życia (Obszary)</div>
+            <div class="card-body">
+                <canvas id="areaChart"></canvas>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Import Chart.js -->
@@ -75,6 +85,18 @@
                                 position: 'bottom',
                             }
                         }
+                    }
+                });
+
+                const areaCtx = document.getElementById('areaChart').getContext('2d');
+                new Chart(areaCtx, {
+                    type: 'pie', // lub 'polarArea'
+                    data: {
+                        labels: data.area_chart.labels,
+                        datasets: [{
+                            data: data.area_chart.data,
+                            backgroundColor: data.area_chart.colors
+                        }]
                     }
                 });
             })

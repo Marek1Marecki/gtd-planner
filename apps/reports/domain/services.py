@@ -7,6 +7,7 @@ from apps.tasks.models import Task
 
 
 class ReportService:
+
     def get_weekly_stats(self, user):
         """Zwraca statystyki z ostatnich 7 dni."""
         now = timezone.now()
@@ -36,3 +37,27 @@ class ReportService:
             'velocity': completed_count / 7.0,  # zadania na dzień
             'breakdown': {item['status']: item['total'] for item in status_breakdown}
         }
+
+    def get_area_distribution(self, user):
+        """Zwraca liczbę zadań per Area (dla aktywnych zadań)."""
+        from apps.tasks.models import Task
+        from django.db.models import Count
+
+        # Grupuj po nazwie obszaru i kolorze
+        data = Task.objects.filter(user=user, status__in=['todo', 'scheduled', 'done']) \
+            .values('area__name', 'area__color') \
+            .annotate(count=Count('id'))
+
+        # Formatowanie dla Chart.js
+        labels = []
+        counts = []
+        colors = []
+
+        for item in data:
+            name = item['area__name'] or "Bez obszaru"
+            color = item['area__color'] or "#cccccc"
+            labels.append(name)
+            counts.append(item['count'])
+            colors.append(color)
+
+        return {'labels': labels, 'data': counts, 'colors': colors}

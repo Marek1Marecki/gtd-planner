@@ -122,12 +122,24 @@ class Task(models.Model):
         related_name='tasks'
     )
 
+    area = models.ForeignKey(
+        'areas.Area',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='tasks'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        # Automatyczne dziedziczenie obszaru z projektu
+        if self.project and self.project.area and not self.area:
+            self.area = self.project.area
+        super().save(*args, **kwargs)
 
 
 from django.db.models.signals import m2m_changed, post_save

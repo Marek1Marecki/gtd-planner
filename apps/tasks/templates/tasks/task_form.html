@@ -34,6 +34,19 @@
                             </select>
                         </div>
 
+                        <!-- ... Obszar ... -->
+                        <div class="mb-3">
+                            <label class="form-label">Obszar (Area)</label>
+                            <select name="area_id" class="form-select">
+                                <option value="">-- Automatycznie (z Projektu) --</option>
+                                {% for area in areas %}
+                                    <option value="{{ area.id }}" {% if task.area_id == area.id %}selected{% endif %}>
+                                        {{ area.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <!-- Kontekst -->
                         <div class="mb-3">
                             <label class="form-label">Kontekst (Gdzie?)</label>

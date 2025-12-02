@@ -23,7 +23,11 @@ class DjangoTaskRepository(ITaskRepository):
             percent_complete=model.percent_complete,
             is_critical_path=model.is_critical_path,
             project_id=model.project_id if model.project_id else None,
-            context_id=model.context_id if model.context_id else None
+            context_id=model.context_id if model.context_id else None,
+            area_id=model.area_id if model.area_id else None,
+            # Pobieramy kolor z relacji (jeśli istnieje)
+            # Dzięki select_related w zapytaniu, nie spowoduje to dodatkowego strzału do DB
+            area_color=model.area.color if model.area else None
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
@@ -49,7 +53,8 @@ class DjangoTaskRepository(ITaskRepository):
             'percent_complete': task.percent_complete,
             'is_critical_path': task.is_critical_path,
             'project_id': task.project_id,
-            'context_id': task.context_id
+            'context_id': task.context_id,
+            'area_id': task.area_id
         }
 
         if task.id:
@@ -69,8 +74,12 @@ class DjangoTaskRepository(ITaskRepository):
         return [self.to_entity(t) for t in qs]
 
     def get_active_tasks(self) -> List[TaskEntity]:
-        # Active = Todo lub Scheduled
-        qs = TaskModel.objects.filter(status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value])
+        # Active = To Do lub Scheduled
+        # Dodajemy select_related('area'), żeby Django pobrało dane obszaru w jednym zapytaniu JOIN
+        qs = TaskModel.objects.filter(
+            status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value]
+        ).select_related('area')
+
         return [self.to_entity(t) for t in qs]
 
     def get_dependent_tasks(self, blocker_id: int) -> List[TaskEntity]:

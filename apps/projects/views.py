@@ -4,6 +4,7 @@ from .models import Project
 from apps.tasks.models import Task  # Potrzebne do wyświetlenia zadań w projekcie
 from apps.notes.models import Note
 from .domain.prediction import ProjectPredictor
+from apps.areas.models import Area
 
 
 @login_required
@@ -73,9 +74,16 @@ def project_create_view(request):
         if parent_id:
             parent = Project.objects.get(id=parent_id)
 
+        area_id = request.POST.get('area_id')
+        area = Area.objects.get(id=area_id) if area_id else None
+
         Project.objects.create(user=request.user, title=title, parent_project=parent)
         return redirect('project_list')
 
     # Do formularza potrzebujemy listy potencjalnych rodziców
     all_projects = Project.objects.filter(user=request.user)
-    return render(request, 'projects/project_form.html', {'all_projects': all_projects})
+    areas = Area.objects.filter(user=request.user)
+
+    return render(request, 'projects/project_form.html',
+                  {'all_projects': all_projects,
+                   'areas': areas,})

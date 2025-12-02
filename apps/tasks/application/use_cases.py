@@ -15,6 +15,7 @@ class CreateTaskInput:
     energy_required: int = 2
     is_private: bool = False
     context_id: Optional[int] = None
+    area_id: Optional[int] = None
 
 class CreateTaskUseCase:
     def __init__(self, repository: ITaskRepository):
@@ -34,7 +35,8 @@ class CreateTaskUseCase:
             project_id=input_dto.project_id,
             energy_required=input_dto.energy_required,
             is_private=input_dto.is_private,
-            context_id=input_dto.context_id
+            context_id=input_dto.context_id,
+            area_id=input_dto.area_id,
         )
 
         return self.repository.save(task, user_id=input_dto.user_id)

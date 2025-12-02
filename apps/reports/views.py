@@ -8,9 +8,29 @@ from apps.tasks.domain.services.tickler import TicklerService
 
 @login_required
 def stats_api_view(request):
+    """
+    API zwracające dane do wykresów (Activity, Status, Areas).
+    """
     service = ReportService()
-    data = service.get_weekly_stats(request.user)
-    return JsonResponse(data)
+
+    # 1. Pobierz podstawowe statystyki (z Fazy 10)
+    # (Metoda get_weekly_stats musi być zaimplementowana w serwisie)
+    stats_data = service.get_weekly_stats(request.user)
+
+    # 2. Pobierz dane o obszarach (z Fazy 18)
+    area_data = service.get_area_distribution(request.user)
+
+    # 3. Połącz dane w jeden słownik
+    response_data = {
+        'period': stats_data['period'],
+        'completed': stats_data['completed'],
+        'created': stats_data['created'],
+        'velocity': stats_data['velocity'],
+        'breakdown': stats_data['breakdown'],  # Dane do wykresu "Pączek" (Statusy)
+        'area_chart': area_data  # Dane do wykresu "Obszary" (Nowe!)
+    }
+
+    return JsonResponse(response_data)
 
 
 @login_required
