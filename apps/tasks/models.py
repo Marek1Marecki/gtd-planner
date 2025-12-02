@@ -155,3 +155,23 @@ def check_recurrence_on_completion(sender, instance, **kwargs):
         from apps.tasks.domain.services import RecurrenceService
         service = RecurrenceService()
         service.handle_task_completion(instance)
+
+
+class ChecklistItem(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='checklist_items')
+    text = models.CharField(max_length=255)
+    is_completed = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.text
+
+    @property
+    def checklist_progress(self):
+        total = self.checklist_items.count()
+        if total == 0: return 0
+        done = self.checklist_items.filter(is_completed=True).count()
+        return int((done / total) * 100)

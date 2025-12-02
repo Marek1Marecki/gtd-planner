@@ -1,0 +1,9 @@
+<h4>{{ task.title }}</h4>
+<p class="text-muted">{{ task.description|default:"Brak opisu." }}</p>
+
+<hr>
+<h5>Checklista</h5>
+{% include 'tasks/partials/checklist.html' %}
+
+<hr>
+<!-- Tu w przyszłości komentarze -->

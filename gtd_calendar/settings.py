@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     'apps.notifications.apps.NotificationsConfig',
     'apps.notes.apps.NotesConfig',
     'apps.contexts.apps.ContextsConfig',
-
+    'apps.habits.apps.HabitsConfig',
     # Biblioteki zewnętrzne
     'django_filters',  # Warto dodać, przyda się do API
     'widget_tweaks',  # Biblioteka do renderowania widgetów

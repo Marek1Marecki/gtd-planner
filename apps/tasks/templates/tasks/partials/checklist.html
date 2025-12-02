@@ -1,0 +1,48 @@
+<!-- apps/tasks/templates/tasks/partials/checklist.html -->
+<div id="checklist-container">
+    <!-- Pasek Postępu -->
+    {% if task.checklist_items.exists %}
+    <div class="progress mb-3" style="height: 28px;">
+        <div class="progress-bar bg-success" role="progressbar"
+             style="width: {{ progress }}%;"
+             aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+        </div>
+    </div>
+    <div class="text-end text-muted small mb-2">
+        {{ progress }}%
+    </div>
+    {% endif %}
+
+    <ul class="list-group list-group-flush mb-3">
+        {% for item in task.checklist_items.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-center p-2">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox"
+                       {% if item.is_completed %}checked{% endif %}
+                       hx-post="{% url 'checklist_toggle' item.id %}"
+                       hx-target="#checklist-container"
+                       hx-swap="outerHTML">
+                <label class="form-check-label {% if item.is_completed %}text-decoration-line-through text-muted{% endif %}">
+                    {{ item.text }}
+                </label>
+            </div>
+            <button class="btn btn-sm text-danger"
+                    hx-delete="{% url 'checklist_delete' item.id %}"
+                    hx-target="#checklist-container"
+                    hx-swap="outerHTML">
+                <i class="bi bi-x"></i>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Formularz dodawania -->
+    <form hx-post="{% url 'checklist_add' task.id %}"
+          hx-target="#checklist-container"
+          hx-swap="outerHTML"
+          class="input-group input-group-sm">
+        {% csrf_token %}
+        <input type="text" name="text" class="form-control" placeholder="Dodaj element..." required>
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-plus"></i></button>
+    </form>
+</div>

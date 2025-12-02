@@ -10,5 +10,9 @@ urlpatterns = [
     path('<int:pk>/complete/', views.task_complete_view, name='task_complete'),
     path('<int:pk>/force-today/', views.task_force_today_view, name='task_force_today'),
     path('<int:pk>/resume/', views.task_resume_view, name='task_resume'),
+    path('<int:task_id>/checklist/add/', views.checklist_add_view, name='checklist_add'),
+    path('checklist/<int:item_id>/toggle/', views.checklist_toggle_view, name='checklist_toggle'),
+    path('checklist/<int:item_id>/delete/', views.checklist_delete_view, name='checklist_delete'),
+    path('<int:pk>/detail_hx/', views.task_detail_hx_view, name='task_detail_hx'),
 
 ]

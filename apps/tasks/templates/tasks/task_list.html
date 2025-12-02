@@ -23,7 +23,14 @@
             <tbody>
                 {% for task in tasks %}
                 <tr>
-                    <td>{{ task.title }}</td>
+                    <td>
+                        <a href="#" class="text-decoration-none text-dark fw-bold"
+                           data-bs-toggle="offcanvas" data-bs-target="#taskDetailOffcanvas"
+                           hx-get="{% url 'task_detail_hx' task.pk %}"
+                           hx-target="#offcanvas-content">
+                            {{ task.title }}
+                        </a>
+                    </td>
                     <td>
                         {% if task.status == 'blocked' %}
                             <span class="badge bg-danger" data-bs-toggle="tooltip" data-bs-html="true"

@@ -61,5 +61,12 @@
             {% endfor %}
         </ul>
     </div>
+
+    <div hx-get="{% url 'habit_widget' %}" hx-trigger="load">
+        <div class="text-center">
+            <div class="spinner-border"></div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

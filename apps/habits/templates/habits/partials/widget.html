@@ -1,0 +1,31 @@
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-lightning-charge"></i> Nawyki
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for habit in habits %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                {{ habit.title }}
+                <span class="badge bg-secondary rounded-pill ms-2" title="Streak">
+                    🔥 {{ habit.current_streak }}
+                </span>
+            </div>
+
+            {% if habit.is_completed_today %}
+                <span class="text-success"><i class="bi bi-check-circle-fill fs-4"></i></span>
+            {% else %}
+                <button class="btn btn-outline-success btn-sm rounded-circle"
+                        style="width: 32px; height: 32px; padding: 0;"
+                        hx-post="{% url 'habit_complete' habit.pk %}"
+                        hx-target="closest .card"
+                        hx-swap="outerHTML">
+                    <i class="bi bi-check"></i>
+                </button>
+            {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted text-center">Brak nawyków. Dodaj w Adminie!</li>
+        {% endfor %}
+    </ul>
+</div>

@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from apps.tasks.domain.services import TaskService
 from .domain.entities import TaskEntity, TaskStatus
+from .models import ChecklistItem
 
 
 @login_required
@@ -185,3 +186,67 @@ def task_edit_view(request, pk):
         'projects': projects,
         'contexts': contexts
     })
+
+
+@require_http_methods(["POST"])
+@login_required
+def checklist_add_view(request, task_id):
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    text = request.POST.get('text')
+
+    if text:
+        ChecklistItem.objects.create(task=task, text=text)
+
+    # Obliczenie postępu
+    total = task.checklist_items.count()
+    done = task.checklist_items.filter(is_completed=True).count()
+    progress = int((done / total) * 100) if total > 0 else 0
+
+    return render(request, 'tasks/partials/checklist.html', {
+        'task': task,
+        'progress': progress
+    })
+
+
+@require_http_methods(["POST"])
+@login_required
+def checklist_toggle_view(request, item_id):
+    item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
+    item.is_completed = not item.is_completed
+    item.save()
+
+    task = item.task
+
+    # Obliczenie postępu
+    total = task.checklist_items.count()
+    done = task.checklist_items.filter(is_completed=True).count()
+    progress = int((done / total) * 100) if total > 0 else 0
+
+    return render(request, 'tasks/partials/checklist.html', {
+        'task': task,
+        'progress': progress
+    })
+
+
+@require_http_methods(["DELETE"])
+@login_required
+def checklist_delete_view(request, item_id):
+    item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
+    task = item.task
+    item.delete()
+
+    # Obliczenie postępu
+    total = task.checklist_items.count()
+    done = task.checklist_items.filter(is_completed=True).count()
+    progress = int((done / total) * 100) if total > 0 else 0
+
+    return render(request, 'tasks/partials/checklist.html', {
+        'task': task,
+        'progress': progress
+    })
+
+
+@login_required
+def task_detail_hx_view(request, pk):
+    task = get_object_or_404(Task, pk=pk, user=request.user)
+    return render(request, 'tasks/partials/task_detail_sidebar.html', {'task': task})
