@@ -49,6 +49,7 @@ class TaskEntity:
     context_id: Optional[int] = None
     area_id: Optional[int] = None
     area_color: Optional[str] = None
+    goal_deadline: Optional[datetime] = None
 
 
     @property

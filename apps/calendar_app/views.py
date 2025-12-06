@@ -6,62 +6,80 @@ from django.contrib.auth.decorators import login_required
 from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
 from .adapters.google_calendar import GoogleCalendarAdapter
 from apps.calendar_app.domain.services import SchedulerService
-
+from apps.core.models import UserProfile
 
 @login_required
 def daily_view(request):
     """
-    Główny widok Kalendarza Dziennego.
-    Orkiestruje pobieranie danych i uruchamianie algorytmu harmonogramowania.
+    Widok Kalendarza z logiką Dual Timeline (Służbowe vs Prywatne).
     """
 
-    # 1. Dane wejściowe (Kontekst czasu)
+    # 1. Kontekst Czasu
     today = date.today()
-    # Używamy UTC dla spójności, w produkcji warto użyć user.timezone
     now = datetime.now(timezone.utc)
 
-    # 2. Pobierz Zadania Elastyczne (Todo/Scheduled)
-    # Korzystamy z Repozytorium zadań, aby pobrać encje domenowe
-    task_repo = DjangoTaskRepository()
-    tasks = task_repo.get_active_tasks()
-
-    # 3. Pobierz Zadania Sztywne (Fixed Events) z Kalendarza
-    # Na razie Mock, docelowo Google Calendar API
-    calendar_provider = GoogleCalendarAdapter()
-    fixed_events = calendar_provider.get_events(request.user.id, today)
-
-    # 4. Uruchom Scheduler
-    # Pobierz profil
+    # Pobierz profil (dla godzin)
     try:
         profile = request.user.profile
     except:
-        # Fallback (powinien być obsłużony w signals, ale dla bezpieczeństwa)
-        from apps.core.models import UserProfile
         profile = UserProfile.objects.create(user=request.user)
+
+    # 2. Pobierz Wszystkie Zadania
+    task_repo = DjangoTaskRepository()
+    all_tasks = task_repo.get_active_tasks()
+
+    # 3. Podział na Domeny (Work vs Personal)
+    work_tasks = [t for t in all_tasks if not t.is_private]
+    personal_tasks = [t for t in all_tasks if t.is_private]
+
+    # 4. Pobierz Fixed Events (Sztywne spotkania)
+    # Pobieramy raz, użyjemy ich do blokowania obu osi czasu
+    calendar_provider = GoogleCalendarAdapter()
+    fixed_events = calendar_provider.get_events(request.user.id, today)
 
     scheduler = SchedulerService()
 
-    # Krok A: Wyznacz okna (używając godzin z profilu)
-    windows = scheduler.calculate_free_windows(
+    # ==========================================
+    # TIMELINE 1: PRACA (Work Window)
+    # ==========================================
+    work_windows = scheduler.calculate_free_windows(
         today,
         fixed_events,
-        work_start=profile.work_start_hour,  # <-- Z BAZY
-        work_end=profile.work_end_hour  # <-- Z BAZY
+        work_start=profile.work_start_hour,
+        work_end=profile.work_end_hour
     )
 
-    # Krok B: Alokacja (przekazujemy cały profil dla energii)
-    schedule = scheduler.schedule_tasks(
-        tasks,
-        windows,
+    work_schedule = scheduler.schedule_tasks(
+        work_tasks,
+        work_windows,
         now,
-        user_profile=profile  # <-- Z BAZY
+        user_profile=profile
     )
 
-    # 5. Przygotuj dane do wyświetlenia (Timeline Items)
-    # Łączymy "Fixed" i "Dynamic" w jedną listę, aby wyświetlić je chronologicznie
+    # ==========================================
+    # TIMELINE 2: PRYWATNE (Personal Window)
+    # ==========================================
+    personal_windows = scheduler.calculate_free_windows(
+        today,
+        fixed_events,
+        work_start=profile.personal_start_hour,
+        work_end=profile.personal_end_hour
+    )
+
+    personal_schedule = scheduler.schedule_tasks(
+        personal_tasks,
+        personal_windows,
+        now,
+        user_profile=profile
+    )
+
+    # ==========================================
+    # 5. Scalanie i Wyświetlanie
+    # ==========================================
+
     timeline_items = []
 
-    # Dodaj Fixed Events (Sztywne)
+    # Dodaj Fixed Events
     for event in fixed_events:
         duration_min = int((event.end_time - event.start_time).total_seconds() / 60)
         timeline_items.append({
@@ -70,17 +88,18 @@ def daily_view(request):
             'end': event.end_time,
             'type': 'fixed',
             'duration': duration_min,
-            'priority': None,  # Fixed nie ma priorytetu w sensie GTD
+            'priority': None,
+            'color': '#343a40'  # Ciemny szary
         })
 
-    # Dodaj Dynamic Tasks (Zaplanowane przez algorytm)
+    # Dodaj Zaplanowane (Work + Personal)
+    full_schedule = work_schedule + personal_schedule
     scheduled_task_ids = set()
-    for item in schedule:
-        duration_min = int((item.end - item.start).total_seconds() / 60)
 
-        # Kolor bierzemy bezpośrednio z encji
-        # Domyślny niebieski, jeśli brak obszaru
-        task_color = item.task.area_color or "#0d6efd"
+    for item in full_schedule:
+        duration_min = int((item.end - item.start).total_seconds() / 60)
+        # Kolor z obszaru (jeśli jest)
+        task_color = item.task.area_color or ("#0d6efd" if not item.task.is_private else "#198754")
 
         timeline_items.append({
             'title': item.task.title,
@@ -90,16 +109,17 @@ def daily_view(request):
             'duration': duration_min,
             'priority': item.task.priority,
             'color': task_color,
+            'task_id': item.task.id  # Potrzebne do akcji HTMX
         })
         scheduled_task_ids.add(item.task.id)
 
-    # Sortuj wszystko chronologicznie po czasie startu
+    # Sortuj chronologicznie
     timeline_items.sort(key=lambda x: x['start'])
 
-    # 6. Oblicz Backlog (Zadania, które się nie zmieściły)
-    backlog_tasks = [t for t in tasks if t.id not in scheduled_task_ids]
+    # 6. Backlog (To co się nie zmieściło w ŻADNYM oknie)
+    backlog_tasks = [t for t in all_tasks if t.id not in scheduled_task_ids]
 
-    # Wybierz szablon bazowy
+    # --- PRZYWRÓCONA LOGIKA HTMX ---
     if request.headers.get('HX-Request'):
         base_template = 'base_htmx.html'
     else:
@@ -109,5 +129,5 @@ def daily_view(request):
         'timeline_items': timeline_items,
         'backlog_tasks': backlog_tasks,
         'today': today,
-        'base_template': base_template  # Przekazujemy nazwę szablonu do extends
+        'base_template': base_template
     })

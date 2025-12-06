@@ -7,6 +7,17 @@ from apps.tasks.models import Task as TaskModel
 class DjangoTaskRepository(ITaskRepository):
     def to_entity(self, model: TaskModel) -> TaskEntity:
         """Konwertuje Model Django -> Czystą Encję."""
+
+        # Logika pobierania deadline'u celu
+        goal_deadline = None
+        if model.project and model.project.goal and model.project.goal.deadline:
+            from datetime import datetime, time
+            import pytz
+            # Konwersja date -> datetime (koniec dnia)
+            # Używamy UTC lub strefy z settings, dla uproszczenia tutaj naive lub UTC
+            d = model.project.goal.deadline
+            goal_deadline = datetime.combine(d, time.max).replace(tzinfo=pytz.UTC)
+
         return TaskEntity(
             id=model.id,
             title=model.title,
@@ -22,12 +33,15 @@ class DjangoTaskRepository(ITaskRepository):
             is_private=model.is_private,
             percent_complete=model.percent_complete,
             is_critical_path=model.is_critical_path,
+
+            # Relacje (ID)
             project_id=model.project_id if model.project_id else None,
             context_id=model.context_id if model.context_id else None,
             area_id=model.area_id if model.area_id else None,
-            # Pobieramy kolor z relacji (jeśli istnieje)
-            # Dzięki select_related w zapytaniu, nie spowoduje to dodatkowego strzału do DB
-            area_color=model.area.color if model.area else None
+
+            # Pola "Enriched" (dane zaciągnięte z relacji dla UI/Algorytmu)
+            area_color=model.area.color if model.area else None,
+            goal_deadline=goal_deadline  # <-- NOWE
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
@@ -78,7 +92,7 @@ class DjangoTaskRepository(ITaskRepository):
         # Dodajemy select_related('area'), żeby Django pobrało dane obszaru w jednym zapytaniu JOIN
         qs = TaskModel.objects.filter(
             status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value]
-        ).select_related('area')
+        ).select_related('area', 'project__goal')
 
         return [self.to_entity(t) for t in qs]
 

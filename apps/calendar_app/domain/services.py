@@ -85,88 +85,82 @@ class SchedulerService:
         tasks: List[TaskEntity],
         windows: List[FreeWindow],
         now: datetime,
-        user_profile  # Obiekt UserProfile z energy_profile
+        user_profile  # Obiekt UserProfile
     ) -> List[ScheduledItem]:
         """
-        Inteligentny algorytm alokacji (Bin Packing z priorytetami).
-        Iteruje po oknach, dobierając zadania pasujące energetycznie i czasowo.
+        Inteligentny algorytm alokacji (Bin Packing) z dynamicznym scoringiem w pętli.
+        Uwzględnia: Priorytet, Energię oraz Ciągłość Projektu (Sequence Bonus).
         """
 
         scorer = TaskScorer()
         schedule = []
 
-        # Tworzymy kopię listy zadań do zaplanowania (żeby móc usuwać zaplanowane)
-        # Filtrujemy tylko aktywne (TODO/SCHEDULED)
+        # Kopia listy zadań do zaplanowania
         remaining_tasks = [t for t in tasks if t.is_active()]
+
+        # Stan Schedulera (Context Awareness)
+        last_project_id = None
 
         for window in windows:
             current_time = window.start
 
-            # Pobierz poziom energii dla danej godziny (uproszczenie: godzina startu okna)
-            # Profil w bazie to np. { "09": 3, "10": 2 }
+            # Pobierz poziom energii dla okna (uproszczone)
             current_hour_str = current_time.strftime("%H")
-
-            # Domyślny poziom energii to 1 (Niska/Normalna), jeśli nie zdefiniowano
             slot_energy = 1
             if user_profile and user_profile.energy_profile:
-                # JSON w bazie może mieć klucze jako stringi "09" lub inty 9.
-                # Spróbujmy obu wariantów dla bezpieczeństwa.
                 val = user_profile.energy_profile.get(current_hour_str)
                 if val is None:
                     val = user_profile.energy_profile.get(int(current_hour_str))
-
                 if val is not None:
                     slot_energy = int(val)
 
-            # -----------------------------------------------------------
-            # KROK 1: Przelicz Score dla tego konkretnego okna (Kontekst)
-            # -----------------------------------------------------------
-            scored_candidates = []
-            for task in remaining_tasks:
-                # Obliczamy score uwzględniając dopasowanie do slot_energy
-                score = scorer.calculate_score(task, now, slot_energy_level=slot_energy)
-                scored_candidates.append((task, score))
+            # PĘTLA ALOKACJI W OKNIE
+            # Dopóki jest czas i zadania
+            while remaining_tasks and (window.end - current_time).total_seconds() > 0:
 
-            # Sortuj malejąco po Score
-            scored_candidates.sort(key=lambda x: x[1], reverse=True)
+                # 1. Przelicz Score dla wszystkich kandydatów w TYM MOMENCIE
+                # (Score zależy od last_project_id, więc zmienia się po każdym wstawieniu!)
+                scored_candidates = []
+                for task in remaining_tasks:
+                    score = scorer.calculate_score(
+                        task,
+                        now,
+                        slot_energy_level=slot_energy,
+                        last_project_id=last_project_id  # <-- Kluczowa zmiana
+                    )
+                    scored_candidates.append((task, score))
 
-            # Tworzymy kolejkę priorytetową dla tego okna
-            queue = [item[0] for item in scored_candidates]
+                # Sortuj malejąco po Score
+                scored_candidates.sort(key=lambda x: x[1], reverse=True)
 
-            # -----------------------------------------------------------
-            # KROK 2: Wypełnianie okna (Bin Packing)
-            # -----------------------------------------------------------
-            i = 0
-            while i < len(queue):
-                task = queue[i]
-                duration = task.duration_expected
-
-                # Ile czasu zostało w oknie?
+                # 2. Wybierz najlepszego, który się mieści w pozostałym czasie okna
+                best_candidate = None
                 window_remaining_minutes = (window.end - current_time).total_seconds() / 60
 
-                if duration <= window_remaining_minutes:
-                    # Zadanie się mieści -> Planujemy!
-                    end_time = current_time + timedelta(minutes=duration)
+                for task, score in scored_candidates:
+                    if task.duration_expected <= window_remaining_minutes:
+                        best_candidate = task
+                        break  # Bierzemy pierwszego (najlepszego), który się mieści
+
+                if best_candidate:
+                    # Planujemy
+                    end_time = current_time + timedelta(minutes=best_candidate.duration_expected)
 
                     schedule.append(ScheduledItem(
-                        task=task,
+                        task=best_candidate,
                         start=current_time,
                         end=end_time
                     ))
 
-                    # Przesuwamy czas w oknie
+                    # Aktualizujemy czas i listę
                     current_time = end_time
+                    remaining_tasks.remove(best_candidate)
 
-                    # Zadanie zaplanowane: usuwamy z obu list (kolejki okna i głównej puli)
-                    if task in remaining_tasks:
-                        remaining_tasks.remove(task)
-
-                    # Usuwamy z kolejki i NIE inkrementujemy 'i' (bo lista się przesunęła)
-                    queue.pop(i)
+                    # Aktualizujemy kontekst dla następnej iteracji
+                    last_project_id = best_candidate.project_id
                 else:
-                    # Zadanie się nie mieści -> sprawdzamy następne w kolejce (może krótsze wejdzie?)
-                    i += 1
-
-            # Koniec pętli dla danego okna. Przechodzimy do następnego okna.
+                    # Żadne zadanie nie mieści się w tym oknie.
+                    # Przerywamy pętlę while i idziemy do następnego okna.
+                    break
 
         return schedule

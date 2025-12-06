@@ -1,5 +1,5 @@
 # apps/tasks/domain/services.py
-from typing import List
+from typing import List, Optional
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
 from datetime import date, datetime, timezone, timedelta
@@ -15,9 +15,16 @@ class TaskScorer:
             'w_complexity': 0.3,
             'w_urgency': 1.5,
             'bonus_energy_match': 0.5,
+            'bonus_sequence': 0.5,
         }
 
-    def calculate_score(self, task: TaskEntity, now: datetime, slot_energy_level: int = 1) -> float:
+    def calculate_score(
+            self,
+            task: TaskEntity,
+            now: datetime,
+            slot_energy_level: int = 1,
+            last_project_id: Optional[int] = None
+        ) -> float:
 
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
         norm_priority = (task.priority - 1) / 4.0
@@ -83,8 +90,49 @@ class TaskScorer:
         # elif task.energy_required > slot_energy_level:
         #     energy_bonus = -0.5
 
+        # --- NOWE: Sequence Bonus ---
+        seq_bonus = 0.0
+        if last_project_id and task.project_id == last_project_id:
+            # Jeśli to ten sam projekt -> Daj bonus
+            seq_bonus = self.weights.get('bonus_sequence', 0.5)
+
+            # Opcjonalnie: Tutaj można by dodać logikę "malejącego bonusu"
+            # (diminishing returns), jeśli przekazalibyśmy licznik "k".
+            # Na start stały bonus 0.5 jest wystarczający, by "przyciągnąć" kolegów.
+
+        # --- NOWE: Goal Urgency ---
+        goal_urgency = 0.0
+        if task.goal_deadline:
+            # Obsługa stref czasowych
+            if task.goal_deadline.tzinfo is None and now.tzinfo:
+                from django.utils.timezone import make_aware
+                try:
+                    target = make_aware(task.goal_deadline)
+                except:
+                    target = task.goal_deadline  # Fallback
+            else:
+                target = task.goal_deadline
+
+            # Jeśli now ma strefę, a target nie (lub odwrotnie), zróbmy proste odejmowanie timestampów
+            # Najprościej: operujmy na naive datetime lub obu aware.
+            # Zakładamy że 'now' jest UTC aware.
+
+            if target.tzinfo and not now.tzinfo:
+                now = now.replace(tzinfo=timezone.utc)
+
+            time_left = target - now
+            days_left = time_left.total_seconds() / 86400
+
+            # Wzór: Im bliżej (np. < 7 dni), tym wyższy bonus
+            # Max bonus 1.0, jeśli deadline jest dzisiaj/jutro
+            # 0.0 jeśli deadline > 14 dni
+            if days_left <= 0:
+                goal_urgency = 1.0
+            elif days_left <= 14:
+                goal_urgency = 1.0 - (days_left / 14.0)
+
         # Sumowanie
-        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + energy_bonus  # + cpm_bonus
+        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + energy_bonus + cpm_bonus + seq_bonus + goal_urgency
 
         return round(total_score, 4)
 

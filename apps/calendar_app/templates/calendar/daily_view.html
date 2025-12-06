@@ -31,9 +31,9 @@
 
                     <!-- 2. Blok Zadania -->
                     <div class="flex-grow-1">
-                        <div class="card shadow-sm border-0
-                            {% if item.type == 'fixed' %}bg-secondary bg-opacity-10{% else %}bg-white{% endif %}"
-                            style="border-left: 5px solid {% if item.type == 'fixed' %}#343a40{% else %}{{ item.color|default:'#0d6efd' }} !important; min-height: 60px;">
+                            <div class="card shadow-sm border-0
+                                {% if item.type == 'fixed' %}bg-secondary bg-opacity-10{% else %}bg-white{% endif %}"
+                                style="border-left: 5px solid {% if item.type == 'fixed' %}#343a40{% else %}{{ item.color|default:'#0d6efd' }}{% endif %} !important; min-height: 60px;">
 
                             <div class="card-body p-2 d-flex align-items-center justify-content-between">
                                 <div>
