@@ -4,6 +4,17 @@
 <div class="container-fluid">
     <h2 class="mb-4">🧠 Przegląd Tygodniowy</h2>
 
+    <!-- WIP Alert -->
+    {% if wip_alert %}
+    <div class="alert alert-danger d-flex align-items-center mb-4">
+        <i class="bi bi-fire fs-4 me-3"></i>
+        <div>
+            <strong>Przeciążenie! (WIP Limit Exceeded)</strong><br>
+            {{ wip_alert }}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ALERTY -->
     {% if stale_paused %}
     <div class="alert alert-warning">

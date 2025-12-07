@@ -56,13 +56,27 @@ def weekly_review_view(request):
     three_days_ago = timezone.now() - timedelta(days=3)
     stale_paused = Task.objects.filter(user=request.user, status='paused', updated_at__lte=three_days_ago)
 
+    # 3. WIP Alert (Work In Progress)
+    # Liczymy zadania zaplanowane na dziś (scheduled) oraz wstrzymane (paused) - czyli te "na stole"
+    active_tasks_count = Task.objects.filter(
+        user=request.user,
+        status__in=['scheduled', 'paused']
+    ).count()
+
+    wip_limit = request.user.profile.wip_limit
+    wip_alert = None
+
+    if active_tasks_count > wip_limit:
+        wip_alert = f"Masz {active_tasks_count} aktywnych zadań (Limit: {wip_limit}). Dokończ coś zanim zaczniesz nowe!"
+
     return render(request, 'reports/weekly_review.html', {
         'due_review': tasks_due_for_review,
         'stale_tasks': stale_tasks,
         'waiting_tasks': waiting_tasks,
         'delegated_tasks': delegated_tasks,
         'postponed_tasks': postponed_tasks,
-        'stale_paused': stale_paused
+        'stale_paused': stale_paused,
+        'wip_alert': wip_alert,
     })
 
 

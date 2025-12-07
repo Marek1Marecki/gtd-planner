@@ -22,6 +22,7 @@ class UserProfile(models.Model):
     # Profil Energetyczny (JSON: {godzina: poziom})
     # Poziom: 1 (Low), 2 (Mid), 3 (High)
     energy_profile = models.JSONField(default=dict, blank=True)
+    wip_limit = models.PositiveIntegerField(default=5, help_text="Maksymalna liczba zadań w toku")
 
     def __str__(self):
         return f"Profile of {self.user.username}"

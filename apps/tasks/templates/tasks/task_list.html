@@ -29,6 +29,13 @@
                            hx-get="{% url 'task_detail_hx' task.pk %}"
                            hx-target="#offcanvas-content">
                             {{ task.title }}
+                            {% if task.status == 'paused' and task.percent_complete > 0 %}
+                                <div class="progress mt-1" style="height: 4px; width: 100px;">
+                                    <div class="progress-bar bg-warning" role="progressbar"
+                                         style="width: {{ task.percent_complete }}%"></div>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.7em;">{{ task.percent_complete }}%</small>
+                            {% endif %}
                         </a>
                     </td>
                     <td>
