@@ -8,6 +8,7 @@ class Goal(models.Model):
     title = models.CharField(max_length=200)
     motivation = models.TextField(blank=True)
     deadline = models.DateField(null=True, blank=True)
+    progress = models.IntegerField(default=0, help_text="Postęp w procentach (0-100)")
 
     created_at = models.DateTimeField(auto_now_add=True)
 

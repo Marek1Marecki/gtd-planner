@@ -4,6 +4,22 @@
 <div class="container-fluid">
     <h2 class="mb-4">🧠 Przegląd Tygodniowy</h2>
 
+    <!-- Alerty Strategiczne -->
+    {% if empty_projects or stagnant_goals %}
+    <div class="alert alert-warning mb-4">
+        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Uwaga Strategiczna</h5>
+        <ul class="mb-0">
+            {% for p in empty_projects %}
+                <li>Projekt <strong>{{ p.title }}</strong> jest pusty. Dodaj zadania lub go zamknij.</li>
+            {% endfor %}
+
+            {% for g in stagnant_goals %}
+                <li>Cel <strong>{{ g.title }}</strong> jest zagrożony ({{ g.progress }}% postępu, deadline {{ g.deadline }}).</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- WIP Alert -->
     {% if wip_alert %}
     <div class="alert alert-danger d-flex align-items-center mb-4">

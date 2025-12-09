@@ -55,3 +55,36 @@ def log_task_changes(sender, instance, created, **kwargs):
                 'new_status': instance.status
             }
         )
+
+
+@receiver(post_save, sender=Task)
+def update_goal_progress(sender, instance, **kwargs):
+    """Przelicz postęp projektu i celu po zmianie zadania."""
+    if instance.project:
+        # 1. Przelicz Projekt (opcjonalnie, jeśli projekt ma pole progress)
+        # ...
+
+        # 2. Przelicz Cel (jeśli projekt ma cel)
+        goal = instance.project.goal
+        if goal:
+            from django.db.models import Count, Q
+
+            # Pobierz wszystkie zadania powiązane z tym celem (przez projekty)
+            # To wymaga odwrotnego lookupu.
+            # Załóżmy strukturę: Goal -> (projects) -> Project -> (tasks) -> Task
+
+            # Agregacja:
+            # Policz wszystkie zadania w projektach tego celu
+            stats = Task.objects.filter(project__goal=goal).aggregate(
+                total=Count('id'),
+                done=Count('id', filter=Q(status='done'))
+            )
+
+            total = stats['total']
+            done = stats['done']
+
+            new_progress = int((done / total) * 100) if total > 0 else 0
+
+            if goal.progress != new_progress:
+                goal.progress = new_progress
+                goal.save()

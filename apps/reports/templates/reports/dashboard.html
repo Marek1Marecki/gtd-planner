@@ -4,6 +4,18 @@
 <div class="container-fluid">
     <h2 class="mb-4"><i class="bi bi-bar-chart-line"></i> Raporty i Statystyki</h2>
 
+    <!-- Nowa kolumna w dashboardzie -->
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">Skuteczność Nawyków (30 dni)</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush" id="habitStatsList">
+                    <!-- Tu JS wstawi dane -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Wykres 1: Status Zadań -->
         <div class="col-md-6">
@@ -43,62 +55,94 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Pobierz dane z naszego API
+        // 1. Pobierz dane z API
         fetch("{% url 'stats_api' %}")
             .then(response => response.json())
             .then(data => {
 
-                // 2. Aktualizuj licznik
-                document.getElementById('completedCount').innerText = data.completed;
+                // --- A. Licznik Produktywności ---
+                const countEl = document.getElementById('completedCount');
+                if(countEl) countEl.innerText = data.completed;
 
-                // 3. Przygotuj dane do wykresu
-                // data.breakdown to np. {"todo": 5, "done": 2, "waiting": 1}
-                const labels = Object.keys(data.breakdown);
-                const values = Object.values(data.breakdown);
+                // --- B. Wykres Statusów (Status Chart) ---
+                const statusCtx = document.getElementById('statusChart');
+                if (statusCtx) {
+                    const labels = Object.keys(data.breakdown);
+                    const values = Object.values(data.breakdown);
 
-                // Kolory dla statusów (opcjonalnie można rozbudować)
-                const colors = {
-                    'todo': '#ffc107', // yellow
-                    'done': '#198754', // green
-                    'waiting': '#0dcaf0', // cyan
-                    'blocked': '#dc3545', // red
-                    'scheduled': '#0d6efd' // blue
-                };
-                const bgColors = labels.map(label => colors[label] || '#6c757d'); // szary domyślny
+                    const colors = {
+                        'todo': '#ffc107',
+                        'done': '#198754',
+                        'waiting': '#0dcaf0',
+                        'blocked': '#dc3545',
+                        'scheduled': '#0d6efd'
+                    };
+                    const bgColors = labels.map(label => colors[label] || '#6c757d');
 
-                // 4. Rysuj Wykres Kołowy (Doughnut)
-                const ctx = document.getElementById('statusChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: bgColors,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            }
-                        }
+                    new Chart(statusCtx.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: bgColors,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }
+
+                // --- C. Wykres Obszarów (Area Chart) ---
+                const areaCtx = document.getElementById('areaChart');
+                if (areaCtx && data.area_chart) {
+                    new Chart(areaCtx.getContext('2d'), {
+                        type: 'pie',
+                        data: {
+                            labels: data.area_chart.labels,
+                            datasets: [{
+                                data: data.area_chart.data,
+                                backgroundColor: data.area_chart.colors
+                            }]
+                        },
+                        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }
+
+                // --- D. Lista Nawyków (Habit Stats) - NOWE ---
+                const habitList = document.getElementById('habitStatsList');
+                if (habitList && data.habit_stats) {
+                    habitList.innerHTML = ''; // Wyczyść placeholder
+
+                    data.habit_stats.forEach(habit => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                        // Kolor paska: zielony > 80%, żółty > 50%, czerwony < 50%
+                        let colorClass = 'bg-danger';
+                        if (habit.rate_30d > 80) colorClass = 'bg-success';
+                        else if (habit.rate_30d > 50) colorClass = 'bg-warning';
+
+                        li.innerHTML = `
+                            <span>${habit.title}</span>
+                            <div class="d-flex align-items-center" style="width: 150px;">
+                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                    <div class="progress-bar ${colorClass}" role="progressbar"
+                                         style="width: ${habit.rate_30d}%"
+                                         aria-valuenow="${habit.rate_30d}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted fw-bold">${habit.rate_30d}%</small>
+                            </div>
+                        `;
+                        habitList.appendChild(li);
+                    });
+
+                    if (data.habit_stats.length === 0) {
+                        habitList.innerHTML = '<li class="list-group-item text-muted text-center">Brak aktywnych nawyków.</li>';
                     }
-                });
+                }
 
-                const areaCtx = document.getElementById('areaChart').getContext('2d');
-                new Chart(areaCtx, {
-                    type: 'pie', // lub 'polarArea'
-                    data: {
-                        labels: data.area_chart.labels,
-                        datasets: [{
-                            data: data.area_chart.data,
-                            backgroundColor: data.area_chart.colors
-                        }]
-                    }
-                });
             })
             .catch(error => console.error('Błąd pobierania statystyk:', error));
     });

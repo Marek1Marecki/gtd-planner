@@ -61,3 +61,34 @@ class ReportService:
             colors.append(color)
 
         return {'labels': labels, 'data': counts, 'colors': colors}
+
+    def get_habit_stats(self, user):
+        """Zwraca skuteczność nawyków w ostatnich 30 dniach."""
+        from apps.habits.models import Habit, HabitLog
+
+        habits = Habit.objects.filter(user=user, is_active=True)
+        stats = []
+
+        # Zakres: ostatnie 30 dni
+        today = timezone.now().date()
+        start_date = today - timedelta(days=30)
+        days_count = 30
+
+        for h in habits:
+            # Ile razy wykonano w tym okresie?
+            logs_count = HabitLog.objects.filter(
+                habit=h,
+                date__gte=start_date
+            ).count()
+
+            # Prosta skuteczność (logs / 30 dni) * 100
+            # (Dla nawyków 'co 2 dni' to będzie max 50%, ale dla codziennych działa dobrze)
+            rate = int((logs_count / days_count) * 100)
+
+            stats.append({
+                'title': h.title,
+                'streak': h.current_streak,
+                'rate_30d': rate
+            })
+
+        return stats
