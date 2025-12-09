@@ -16,6 +16,19 @@
         </div>
     </div>
 
+    <!-- Nowa karta: Zdrowie Zadań Cyklicznych -->
+    <div class="col-md-6 mt-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">Regularność Zadań (Średnie Opóźnienie)</div>
+            <div class="card-body">
+                <!-- TO JEST TEN ELEMENT -->
+                <ul class="list-group list-group-flush" id="recurringStats">
+                    <li class="text-center text-muted small py-3">Ładowanie danych...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Wykres 1: Status Zadań -->
         <div class="col-md-6">
@@ -141,6 +154,20 @@
                     if (data.habit_stats.length === 0) {
                         habitList.innerHTML = '<li class="list-group-item text-muted text-center">Brak aktywnych nawyków.</li>';
                     }
+                }
+
+
+                // Zakładam, że dodasz <ul> id="recurringStats" w HTML
+                if (data.recurring_stats) {
+                    const list = document.getElementById('recurringStats');
+                    list.innerHTML = '';
+                    data.recurring_stats.forEach(item => {
+                        let badgeClass = item.avg_delay < 1 ? 'bg-success' : (item.avg_delay < 3 ? 'bg-warning' : 'bg-danger');
+                        list.innerHTML += `<li class="list-group-item d-flex justify-content-between">
+                            ${item.title}
+                            <span class="badge ${badgeClass}">Opóźnienie: ${item.avg_delay} dni</span>
+                        </li>`;
+                    });
                 }
 
             })

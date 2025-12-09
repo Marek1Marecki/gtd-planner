@@ -40,3 +40,15 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action_type} - {self.timestamp}"
+
+
+class ReviewSession(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+
+    # Treść
+    reflection = models.TextField(blank=True, verbose_name="Refleksja (Co poszło dobrze/źle?)")
+    next_week_priorities = models.TextField(blank=True, verbose_name="Priorytety na kolejny tydzień")
+
+    def __str__(self):
+        return f"Review {self.date.strftime('%Y-%m-%d')}"

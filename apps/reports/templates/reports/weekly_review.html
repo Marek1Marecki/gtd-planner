@@ -20,6 +20,18 @@
     </div>
     {% endif %}
 
+    <!-- Alert Przerwane Cykle -->
+    {% if broken_cycles %}
+    <div class="alert alert-danger">
+        <strong><i class="bi bi-arrow-repeat"></i> Przerwane cykle (Brak zadań):</strong>
+        <ul>
+            {% for p in broken_cycles %}
+                <li>{{ p.title }} (powinien być: {{ p.next_run_date }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- WIP Alert -->
     {% if wip_alert %}
     <div class="alert alert-danger d-flex align-items-center mb-4">
@@ -104,6 +116,36 @@
             </div>
             {% endfor %}
         </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Sekcja Planowania (Na dole) -->
+    <div class="card mt-5 border-primary">
+        <div class="card-header bg-primary text-white fw-bold">Zakończenie Przeglądu</div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Refleksja tygodniowa</label>
+                    {{ review_form.reflection }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Priorytety na przyszły tydzień</label>
+                    {{ review_form.next_week_priorities }}
+                </div>
+                <button type="submit" class="btn btn-success w-100 py-2">
+                    <i class="bi bi-check-circle-fill"></i> Zapisz i Zamknij Tydzień
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ostatni Plan (Dla przypomnienia) -->
+    {% if last_review %}
+    <div class="mt-4 text-muted small">
+        <h6>Twój poprzedni fokus ({{ last_review.date|date }})</h6>
+        <p>{{ last_review.next_week_priorities|linebreaksbr }}</p>
     </div>
     {% endif %}
 

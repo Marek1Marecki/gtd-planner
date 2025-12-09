@@ -38,6 +38,7 @@ class ReportService:
             'breakdown': {item['status']: item['total'] for item in status_breakdown}
         }
 
+
     def get_area_distribution(self, user):
         """Zwraca liczbę zadań per Area (dla aktywnych zadań)."""
         from apps.tasks.models import Task
@@ -61,6 +62,7 @@ class ReportService:
             colors.append(color)
 
         return {'labels': labels, 'data': counts, 'colors': colors}
+
 
     def get_habit_stats(self, user):
         """Zwraca skuteczność nawyków w ostatnich 30 dniach."""
@@ -89,6 +91,41 @@ class ReportService:
                 'title': h.title,
                 'streak': h.current_streak,
                 'rate_30d': rate
+            })
+
+        return stats
+
+
+    def get_recurring_health(self, user):
+        """Zwraca średnie opóźnienie dla zadań cyklicznych."""
+        from apps.tasks.models import RecurringPattern, Task
+        from django.db.models import F, Avg
+
+        patterns = RecurringPattern.objects.filter(user=user, is_active=True)
+        stats = []
+
+        for pat in patterns:
+            # Pobierz zadania ukończone
+            # Oblicz delay: completed_at - due_date
+            # To trudne w czystym ORM SQLite/Postgres bez funkcji DB,
+            # więc zrobimy to w Pythonie (na małej próbce np. 5 ostatnich).
+
+            tasks = Task.objects.filter(recurring_pattern=pat, status='done').order_by('-completed_at')[:5]
+            if not tasks: continue
+
+            delays = []
+            for t in tasks:
+                if t.due_date and t.completed_at:
+                    # completed_at to datetime, due_date to date (lub datetime)
+                    # Ujednolicamy do date()
+                    delta = (t.completed_at.date() - t.due_date.date()).days
+                    delays.append(max(0, delta))  # 0 jeśli przed czasem
+
+            avg_delay = sum(delays) / len(delays) if delays else 0
+
+            stats.append({
+                'title': pat.title,
+                'avg_delay': round(avg_delay, 1)
             })
 
         return stats

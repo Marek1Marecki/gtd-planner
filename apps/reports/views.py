@@ -9,6 +9,21 @@ from .domain.services import ReportService
 from apps.tasks.domain.services.tickler import TicklerService
 from django.utils import timezone
 from datetime import date, timedelta
+from apps.tasks.models import RecurringPattern
+from .models import ReviewSession
+from django import forms
+
+
+# Prosty formularz (można w forms.py, ale tu szybciej dla MVP)
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = ReviewSession
+        fields = ['reflection', 'next_week_priorities']
+        widgets = {
+            'reflection': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'next_week_priorities': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        }
+
 
 @login_required
 def stats_api_view(request):
@@ -17,23 +32,28 @@ def stats_api_view(request):
     """
     service = ReportService()
 
-    # 1. Pobierz podstawowe statystyki (z Fazy 10)
-    # (Metoda get_weekly_stats musi być zaimplementowana w serwisie)
+    # 1. Pobierz podstawowe statystyki
     stats_data = service.get_weekly_stats(request.user)
-    # 2. Pobierz dane o obszarach (z Fazy 18)
+
+    # 2. Pobierz dane o obszarach
     area_data = service.get_area_distribution(request.user)
 
+    # 3. Pobierz skuteczność nawyków
     habit_data = service.get_habit_stats(request.user)
 
-    # 3. Połącz dane w jeden słownik
+    # 4. NOWE: Pobierz zdrowie zadań cyklicznych
+    recurring_data = service.get_recurring_health(request.user)
+
+    # Zbuduj odpowiedź
     response_data = {
         'period': stats_data['period'],
         'completed': stats_data['completed'],
         'created': stats_data['created'],
         'velocity': stats_data['velocity'],
-        'breakdown': stats_data['breakdown'],  # Dane do wykresu "Pączek" (Statusy)
-        'area_chart': area_data,  # Dane do wykresu "Obszary" (Nowe!)
-        'habit_stats': habit_data,  # Dane do wykresu "Nawyków" (Nowe!)
+        'breakdown': stats_data['breakdown'],
+        'area_chart': area_data,
+        'habit_stats': habit_data,
+        'recurring_stats': recurring_data
     }
 
     return JsonResponse(response_data)
@@ -46,6 +66,36 @@ def weekly_review_view(request):
     tickler = TicklerService()
     user = request.user
     today = date.today()
+
+    # --- 1. Obsługa Planowania Strategicznego ---
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            session = form.save(commit=False)
+            session.user = user
+            session.save()
+            # Można dodać redirect, żeby wyczyścić POST
+    else:
+        form = ReviewForm()
+
+    # Pobierz ostatni plan (żeby wyświetlić "Aktualny Fokus")
+    last_review = ReviewSession.objects.filter(user=user).order_by('-date').first()
+
+    # --- 2. Alerty Recurring (Przerwane cykle) ---
+    today = date.today()
+    broken_cycles = []
+    active_patterns = RecurringPattern.objects.filter(user=user, is_active=True)
+
+    for pat in active_patterns:
+        # Jeśli data następnego wykonania minęła...
+        if pat.next_run_date < today:
+            # ...i nie ma aktywnego zadania z tego szablonu
+            has_active = Task.objects.filter(
+                recurring_pattern=pat,
+                status__in=['todo', 'scheduled', 'overdue']
+            ).exists()
+            if not has_active:
+                broken_cycles.append(pat)
 
     # 1. Zadania, które "wyskoczyły" w kalendarzu
     tasks_due_for_review = tickler.get_tasks_for_review(request.user)
@@ -102,6 +152,9 @@ def weekly_review_view(request):
         'wip_alert': wip_alert,
         'empty_projects': empty_projects,
         'stagnant_goals': stagnant_goals,
+        'broken_cycles': broken_cycles,
+        'review_form': form,
+        'last_review': last_review,
     })
 
 
