@@ -47,6 +47,7 @@ class DjangoTaskRepository(ITaskRepository):
             project_id=model.project_id if model.project_id else None,
             context_id=model.context_id if model.context_id else None,
             area_id=model.area_id if model.area_id else None,
+            goal_id=model.goal_id if model.goal_id else None,
 
             # Pola "Enriched" (dane zaciągnięte z relacji dla UI/Algorytmu)
             area_color=model.area.color if model.area else None,
@@ -82,6 +83,7 @@ class DjangoTaskRepository(ITaskRepository):
             'context_id': task.context_id,
             'area_id': task.area_id,
             'is_milestone': task.is_milestone,
+            'goal_id': task.goal_id,
         }
 
         if task.id:

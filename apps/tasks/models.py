@@ -131,6 +131,8 @@ class Task(models.Model):
         related_name='tasks'
     )
 
+    goal = models.ForeignKey('goals.Goal', null=True, blank=True, on_delete=models.SET_NULL, related_name='tasks')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -17,6 +17,7 @@ class CreateTaskInput:
     context_id: Optional[int] = None
     area_id: Optional[int] = None
     is_milestone: bool = False
+    goal_id: Optional[int] = None
 
 class CreateTaskUseCase:
     def __init__(self, repository: ITaskRepository):
@@ -39,6 +40,7 @@ class CreateTaskUseCase:
             context_id=input_dto.context_id,
             area_id=input_dto.area_id,
             is_milestone=input_dto.is_milestone,
+            goal_id=input_dto.goal_id,
         )
 
         return self.repository.save(task, user_id=input_dto.user_id)

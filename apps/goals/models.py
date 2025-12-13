@@ -5,6 +5,7 @@ from django.conf import settings
 
 class Goal(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='subgoals')
     title = models.CharField(max_length=200)
     motivation = models.TextField(blank=True)
     deadline = models.DateField(null=True, blank=True)

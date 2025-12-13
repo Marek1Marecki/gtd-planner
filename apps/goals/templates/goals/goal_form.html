@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-body">
+            <h3 class="card-title mb-4">{{ title }}</h3>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'goal_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary">Zapisz Cel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
