@@ -17,6 +17,8 @@ class TaskScorer:
             'w_project_urgency': 1.0,
             'bonus_energy_match': 0.5,
             'bonus_sequence': 0.5,
+            'w_goal_urgency': 1.0,
+            'bonus_milestone': 2.0,  # Bardzo wysoki bonus!
         }
 
     def calculate_score(
@@ -161,13 +163,17 @@ class TaskScorer:
             elif days_left <= 14:
                 project_urgency_score = 1.0 - (days_left / 14.0)
 
+        # --- NOWE: Milestone Bonus ---
+        milestone_bonus = 0.0
+        if task.is_milestone:
+            milestone_bonus = self.weights['bonus_milestone']
 
         # Sumowanie
         total_score = base_score + \
                       (self.weights['w_urgency'] * urgency_score) + \
                       (self.weights.get('w_goal_urgency', 1.0) * goal_urgency) + \
                       (self.weights['w_project_urgency'] * project_urgency_score) + \
-                      energy_bonus + cpm_bonus + seq_bonus
+                      energy_bonus + cpm_bonus + seq_bonus + milestone_bonus
 
         return round(total_score, 4)
 

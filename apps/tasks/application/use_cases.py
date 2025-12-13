@@ -16,6 +16,7 @@ class CreateTaskInput:
     is_private: bool = False
     context_id: Optional[int] = None
     area_id: Optional[int] = None
+    is_milestone: bool = False
 
 class CreateTaskUseCase:
     def __init__(self, repository: ITaskRepository):
@@ -37,6 +38,7 @@ class CreateTaskUseCase:
             is_private=input_dto.is_private,
             context_id=input_dto.context_id,
             area_id=input_dto.area_id,
+            is_milestone=input_dto.is_milestone,
         )
 
         return self.repository.save(task, user_id=input_dto.user_id)

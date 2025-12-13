@@ -42,6 +42,7 @@ class TaskEntity:
     percent_complete: int = 0  # dla Paused
 
     is_critical_path: bool = False  # Flaga CPM
+    is_milestone: bool = False
 
     # Relacje (tylko ID, żeby nie wiązać obiektów domenowych z ORM)
     project_id: Optional[int] = None

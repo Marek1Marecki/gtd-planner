@@ -28,7 +28,13 @@
                            data-bs-toggle="offcanvas" data-bs-target="#taskDetailOffcanvas"
                            hx-get="{% url 'task_detail_hx' task.pk %}"
                            hx-target="#offcanvas-content">
+                            <!-- NOWE: Ikonka Kamienia Milowego -->
+                            {% if task.is_milestone %}
+                                <i class="bi bi-gem text-primary me-1" title="Kamień Milowy"></i>
+                            {% endif %}
+                            <!-- Tytuł -->
                             {{ task.title }}
+                            <!-- Pasek postępu (dla paused) -->
                             {% if task.status == 'paused' and task.percent_complete > 0 %}
                                 <div class="progress mt-1" style="height: 4px; width: 100px;">
                                     <div class="progress-bar bg-warning" role="progressbar"

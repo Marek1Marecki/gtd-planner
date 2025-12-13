@@ -37,8 +37,9 @@ def task_create_view(request):
         project_id = request.POST.get('project_id')
         energy = request.POST.get('energy_required')
         is_private = request.POST.get('is_private') == 'on'
-        context_id = request.POST.get('context_id'),
+        context_id = request.POST.get('context_id')
         area_id = request.POST.get('area_id')
+        is_milestone = request.POST.get('is_milestone') == 'on'
 
         # Konwersja project_id (pusty string -> None)
         project_id_int = int(project_id) if project_id else None
@@ -57,7 +58,8 @@ def task_create_view(request):
             energy_required=int(energy) if energy else 2,
             is_private=is_private,
             context_id=ctx_id_val,
-            area_id=int(area_id) if area_id else None
+            area_id=int(area_id) if area_id else None,
+            is_milestone=is_milestone
         )
 
         # 2. Złożenie Use Case (Manual Dependency Injection)
@@ -162,6 +164,7 @@ def task_edit_view(request, pk):
         energy = request.POST.get('energy_required')
         is_private = request.POST.get('is_private') == 'on'
         area_id = request.POST.get('area_id')
+        is_milestone = request.POST.get('is_milestone') == 'on'
 
         # 3. Zaktualizuj Encję (Tworzymy obiekt z ID, co wymusi UPDATE w repo)
         updated_task = TaskEntity(
@@ -177,6 +180,7 @@ def task_edit_view(request, pk):
             is_private=is_private,
             percent_complete=task_model.percent_complete,
             area_id=int(area_id) if area_id else None,
+            is_milestone=is_milestone
         )
 
         # 4. Zapisz (Repozytorium wykryje ID i zrobi UPDATE)

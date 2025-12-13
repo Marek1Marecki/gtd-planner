@@ -100,11 +100,16 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">Kontekst</label>
+                                <label class="form-label">Opcje</label>
                                 <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input" type="checkbox" id="is_private" name="is_private"
-                                           {% if task.is_private %}checked{% endif %}>
+                                    <input class="form-check-input" type="checkbox" id="is_private" name="is_private" {% if task.is_private %}checked{% endif %}>
                                     <label class="form-check-label" for="is_private">🏠 Zadanie Prywatne</label>
+                                </div>
+
+                                <!-- NOWE: Milestone -->
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="is_milestone" name="is_milestone" {% if task.is_milestone %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold text-primary" for="is_milestone">💎 Kamień Milowy</label>
                                 </div>
                             </div>
                         </div>

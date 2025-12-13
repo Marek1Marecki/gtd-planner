@@ -52,6 +52,7 @@ class DjangoTaskRepository(ITaskRepository):
             area_color=model.area.color if model.area else None,
             goal_deadline=goal_deadline,
             project_deadline=project_deadline,
+            is_milestone=model.is_milestone,
 
         )
 
@@ -79,7 +80,8 @@ class DjangoTaskRepository(ITaskRepository):
             'is_critical_path': task.is_critical_path,
             'project_id': task.project_id,
             'context_id': task.context_id,
-            'area_id': task.area_id
+            'area_id': task.area_id,
+            'is_milestone': task.is_milestone,
         }
 
         if task.id:

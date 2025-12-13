@@ -72,6 +72,8 @@ class Task(models.Model):
 
     # Kontekst
     is_private = models.BooleanField(default=False)
+    is_milestone = models.BooleanField(default=False, help_text="Oznacza punkt kontrolny projektu")
+
     percent_complete = models.PositiveIntegerField(default=0)
 
     # Powiazanie z Projektami
