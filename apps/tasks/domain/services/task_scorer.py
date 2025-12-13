@@ -1,4 +1,4 @@
-# apps/tasks/domain/services.py
+# apps/tasks/domain/services/task_scorer.py
 from typing import List, Optional
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
@@ -14,6 +14,7 @@ class TaskScorer:
             'w_duration': 0.3,
             'w_complexity': 0.3,
             'w_urgency': 1.5,
+            'w_project_urgency': 1.0,
             'bonus_energy_match': 0.5,
             'bonus_sequence': 0.5,
         }
@@ -131,8 +132,42 @@ class TaskScorer:
             elif days_left <= 14:
                 goal_urgency = 1.0 - (days_left / 14.0)
 
+        # --- NOWE: Project Urgency ---
+        project_urgency_score = 0.0
+
+        # Logika: Jeśli zadanie nie ma własnego deadline'u (lub chcemy wzmocnić przekaz),
+        # sprawdzamy deadline projektu.
+        # Wg specyfikacji: "Zadania bez własnego terminu dziedziczą presję".
+        # Ale możemy dodać to addytywnie dla wszystkich, co jest bezpieczniejsze.
+
+        if task.project_deadline:
+            # Ujednolicenie stref czasowych (tak jak przy goal_deadline)
+            target = task.project_deadline
+            if target.tzinfo is None and now.tzinfo:
+                # Zakładamy UTC dla uproszczenia lub konwertujemy
+                pass
+
+            if target.tzinfo and not now.tzinfo:
+                now = now.replace(tzinfo=timezone.utc)
+
+            time_left = target - now
+            days_left = time_left.total_seconds() / 86400
+
+            # Wzór na pilność projektu (łagodniejszy niż zadania)
+            # Jeśli < 3 dni -> max bonus
+            # Jeśli > 30 dni -> 0
+            if days_left <= 0:
+                project_urgency_score = 1.0
+            elif days_left <= 14:
+                project_urgency_score = 1.0 - (days_left / 14.0)
+
+
         # Sumowanie
-        total_score = base_score + (self.weights['w_urgency'] * urgency_score) + energy_bonus + cpm_bonus + seq_bonus + goal_urgency
+        total_score = base_score + \
+                      (self.weights['w_urgency'] * urgency_score) + \
+                      (self.weights.get('w_goal_urgency', 1.0) * goal_urgency) + \
+                      (self.weights['w_project_urgency'] * project_urgency_score) + \
+                      energy_bonus + cpm_bonus + seq_bonus
 
         return round(total_score, 4)
 

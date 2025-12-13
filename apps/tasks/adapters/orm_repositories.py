@@ -18,6 +18,15 @@ class DjangoTaskRepository(ITaskRepository):
             d = model.project.goal.deadline
             goal_deadline = datetime.combine(d, time.max).replace(tzinfo=pytz.UTC)
 
+        # NOWY KOD: Project Deadline
+        project_deadline = None
+        if model.project and model.project.deadline:
+            from datetime import datetime, time
+            import pytz
+            # Konwersja date -> datetime (koniec dnia)
+            d = model.project.deadline
+            project_deadline = datetime.combine(d, time.max).replace(tzinfo=pytz.UTC)
+
         return TaskEntity(
             id=model.id,
             title=model.title,
@@ -41,7 +50,9 @@ class DjangoTaskRepository(ITaskRepository):
 
             # Pola "Enriched" (dane zaciągnięte z relacji dla UI/Algorytmu)
             area_color=model.area.color if model.area else None,
-            goal_deadline=goal_deadline  # <-- NOWE
+            goal_deadline=goal_deadline,
+            project_deadline=project_deadline,
+
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
