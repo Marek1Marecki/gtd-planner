@@ -34,6 +34,10 @@
                     <label class="form-label">Czas max (min)</label>
                     <input type="number" name="duration_min" class="form-control" value="{{ request.GET.duration_min }}">
                 </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tagi</label>
+                    {{ filter.form.tags }}
+                </div>
 
                 <div class="col-12 text-end">
                     <a href="{% url 'task_search' %}" class="btn btn-outline-secondary">Wyczyść</a>

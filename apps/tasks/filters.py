@@ -4,6 +4,8 @@ from django import forms
 from .models import Task
 from apps.areas.models import Area
 from apps.contexts.models import Context
+from apps.contexts.models import Tag
+
 
 class TaskFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(
@@ -36,6 +38,13 @@ class TaskFilter(django_filters.FilterSet):
         queryset=Area.objects.all(),
         label="Obszar",
         widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    tags = django_filters.ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        field_name='tags',
+        label="Tagi",
+        # Użyjemy domyślnego widgetu select multiple
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '3'})
     )
 
     class Meta:

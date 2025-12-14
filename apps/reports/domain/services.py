@@ -129,3 +129,27 @@ class ReportService:
             })
 
         return stats
+
+
+    def get_context_distribution(self, user):
+        """Zwraca liczbę zadań per Context."""
+        from apps.tasks.models import Task
+        from django.db.models import Count
+
+        # Grupuj po nazwie kontekstu
+        data = Task.objects.filter(user=user, status__in=['todo', 'scheduled', 'done']) \
+            .values('context__name', 'context__color') \
+            .annotate(count=Count('id'))
+
+        labels = []
+        counts = []
+        colors = []
+
+        for item in data:
+            name = item['context__name'] or "Bez kontekstu"
+            color = item['context__color'] or "#6c757d"  # Szary domyślny
+            labels.append(name)
+            counts.append(item['count'])
+            colors.append(color)
+
+        return {'labels': labels, 'data': counts, 'colors': colors}

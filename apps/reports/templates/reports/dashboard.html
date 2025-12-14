@@ -61,6 +61,19 @@
         </div>
     </div>
 
+    <!-- Nowy rząd dla Kontekstów -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-bold">Mapa Kontekstów (Gdzie?)</div>
+                <div class="card-body">
+                    <canvas id="contextChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Tu w przyszłości Chmura Tagów -->
+    </div>
+
 </div>
 
 <!-- Import Chart.js -->
@@ -167,6 +180,26 @@
                             ${item.title}
                             <span class="badge ${badgeClass}">Opóźnienie: ${item.avg_delay} dni</span>
                         </li>`;
+                    });
+                }
+
+                // Context Chart (Bar Chart dla odmiany)
+                if (data.context_chart) {
+                    const ctxCtx = document.getElementById('contextChart').getContext('2d');
+                    new Chart(ctxCtx, {
+                        type: 'bar', // Słupkowy, bo nazw może być dużo
+                        data: {
+                            labels: data.context_chart.labels,
+                            datasets: [{
+                                label: 'Liczba zadań',
+                                data: data.context_chart.data,
+                                backgroundColor: data.context_chart.colors
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', // Poziomy wykres
+                            responsive: true
+                        }
                     });
                 }
 

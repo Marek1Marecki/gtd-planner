@@ -38,6 +38,8 @@ class Project(models.Model):
         related_name='projects'
     )
 
+    tags = models.ManyToManyField('contexts.Tag', blank=True, related_name='projects')
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

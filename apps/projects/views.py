@@ -1,10 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Project
-from apps.tasks.models import Task  # Potrzebne do wyświetlenia zadań w projekcie
-from apps.notes.models import Note
 from .domain.prediction import ProjectPredictor
 from apps.areas.models import Area
+from apps.contexts.models import Tag
 
 
 @login_required
@@ -69,21 +68,44 @@ def project_create_view(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         parent_id = request.POST.get('parent_id')
+        area_id = request.POST.get('area_id')
+        tag_ids = request.POST.getlist('tags')  # <-- NOWE
 
         parent = None
         if parent_id:
-            parent = Project.objects.get(id=parent_id)
+            try:
+                parent = Project.objects.get(id=parent_id)
+            except Project.DoesNotExist:
+                pass
 
-        area_id = request.POST.get('area_id')
-        area = Area.objects.get(id=area_id) if area_id else None
+        area = None
+        if area_id:
+            try:
+                area = Area.objects.get(id=area_id)
+            except Area.DoesNotExist:
+                pass
 
-        Project.objects.create(user=request.user, title=title, parent_project=parent)
+        # Tworzymy projekt
+        project = Project.objects.create(
+            user=request.user,
+            title=title,
+            parent_project=parent,
+            area=area
+        )
+
+        # Przypisujemy tagi (M2M wymaga istniejącego obiektu, dlatego robimy to po create)
+        if tag_ids:
+            project.tags.set(tag_ids)
+
         return redirect('project_list')
 
-    # Do formularza potrzebujemy listy potencjalnych rodziców
+    # GET: Pobierz dane do formularzy
     all_projects = Project.objects.filter(user=request.user)
     areas = Area.objects.filter(user=request.user)
+    all_tags = Tag.objects.filter(user=request.user)  # <-- NOWE
 
-    return render(request, 'projects/project_form.html',
-                  {'all_projects': all_projects,
-                   'areas': areas,})
+    return render(request, 'projects/project_form.html', {
+        'all_projects': all_projects,
+        'areas': areas,
+        'all_tags': all_tags
+    })

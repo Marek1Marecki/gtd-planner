@@ -66,6 +66,7 @@ def weekly_review_view(request):
     user = request.user
     today = date.today()
     tickler = TicklerService()
+    service = ReportService()
 
     # ----------------------------------------------------
     # 1. Obsługa Zapisu Sesji (Formularz)
@@ -145,6 +146,8 @@ def weekly_review_view(request):
         if completed_count == 0:
             neglected_areas.append(area)
 
+    context_data = service.get_context_distribution(request.user)
+
     return render(request, 'reports/weekly_review.html', {
         'review_form': form,
         'last_review': last_review,
@@ -157,7 +160,8 @@ def weekly_review_view(request):
 
         'empty_projects': empty_projects,
         'stagnant_goals': stagnant_goals,
-        'neglected_areas': neglected_areas  # <-- Przekazujemy
+        'neglected_areas': neglected_areas,
+        'context_data': context_data
     })
 
 
