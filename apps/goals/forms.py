@@ -4,7 +4,7 @@ from .models import Goal
 class GoalForm(forms.ModelForm):
     class Meta:
         model = Goal
-        fields = ['title', 'deadline', 'motivation', 'parent'] # Dodaj parent
+        fields = ['title', 'deadline', 'motivation', 'parent', 'area']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'deadline': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

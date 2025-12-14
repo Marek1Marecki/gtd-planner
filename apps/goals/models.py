@@ -10,6 +10,12 @@ class Goal(models.Model):
     motivation = models.TextField(blank=True)
     deadline = models.DateField(null=True, blank=True)
     progress = models.IntegerField(default=0, help_text="Postęp w procentach (0-100)")
+    area = models.ForeignKey(
+        'areas.Area',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='goals'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

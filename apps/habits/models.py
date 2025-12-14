@@ -16,6 +16,13 @@ class Habit(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    area = models.ForeignKey(
+        'areas.Area',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='habits'
+    )
+
     def __str__(self):
         return self.title
 

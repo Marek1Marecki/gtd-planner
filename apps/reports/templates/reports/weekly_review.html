@@ -45,14 +45,26 @@
 
     <!-- ALERTY -->
     {% if stale_paused %}
-    <div class="alert alert-warning">
-        <h5><i class="bi bi-exclamation-triangle"></i> Wstrzymane zadania (wymagają uwagi)</h5>
-        <ul class="mb-0">
-            {% for task in stale_paused %}
-                <li>{{ task.title }} (wstrzymane od {{ task.updated_at|date }})</li>
-            {% endfor %}
-        </ul>
-    </div>
+        <div class="alert alert-warning">
+            <h5><i class="bi bi-exclamation-triangle"></i> Wstrzymane zadania (wymagają uwagi)</h5>
+            <ul class="mb-0">
+                {% for task in stale_paused %}
+                    <li>{{ task.title }} (wstrzymane od {{ task.updated_at|date }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if neglected_areas %}
+        <div class="alert alert-secondary mb-4">
+            <h5 class="alert-heading"><i class="bi bi-battery-half"></i> Zaniedbane Obszary</h5>
+            <p class="mb-0">W tym tygodniu nie ukończyłeś żadnych zadań w obszarach:</p>
+            <ul>
+                {% for area in neglected_areas %}
+                    <li><strong>{{ area.name }}</strong></li>
+                {% endfor %}
+            </ul>
+        </div>
     {% endif %}
 
     <div class="row">
@@ -62,15 +74,15 @@
                 <div class="card-header bg-info text-white">Oczekujące (Waiting)</div>
                 <div class="list-group list-group-flush">
                     {% for task in waiting_tasks %}
-                    <div class="list-group-item">
-                        <strong>{{ task.title }}</strong><br>
-                        <small class="text-muted">Czekam na...</small>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-success">Otrzymano</button>
+                        <div class="list-group-item">
+                            <strong>{{ task.title }}</strong><br>
+                            <small class="text-muted">Czekam na...</small>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-success">Otrzymano</button>
+                            </div>
                         </div>
-                    </div>
                     {% empty %}
-                    <div class="p-3 text-muted">Pusto!</div>
+                        <div class="p-3 text-muted">Pusto!</div>
                     {% endfor %}
                 </div>
             </div>

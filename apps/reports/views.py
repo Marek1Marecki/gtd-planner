@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from apps.tasks.models import Task
@@ -12,16 +12,18 @@ from datetime import date, timedelta
 from apps.tasks.models import RecurringPattern
 from .models import ReviewSession
 from django import forms
+from apps.areas.models import Area
 
 
 # Prosty formularz (można w forms.py, ale tu szybciej dla MVP)
+# Formularz inline (można przenieść do forms.py)
 class ReviewForm(forms.ModelForm):
     class Meta:
         model = ReviewSession
         fields = ['reflection', 'next_week_priorities']
         widgets = {
-            'reflection': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'next_week_priorities': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'reflection': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Co poszło dobrze? Co poprawić?'}),
+            'next_week_priorities': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Główne cele na przyszły tydzień...'}),
         }
 
 
@@ -61,35 +63,46 @@ def stats_api_view(request):
 
 @login_required
 def weekly_review_view(request):
-    """Dashboard Przeglądu Tygodniowego."""
-
-    tickler = TicklerService()
     user = request.user
     today = date.today()
+    tickler = TicklerService()
 
-    # --- 1. Obsługa Planowania Strategicznego ---
+    # ----------------------------------------------------
+    # 1. Obsługa Zapisu Sesji (Formularz)
+    # ----------------------------------------------------
     if request.method == 'POST':
         form = ReviewForm(request.POST)
         if form.is_valid():
             session = form.save(commit=False)
             session.user = user
             session.save()
-            # Można dodać redirect, żeby wyczyścić POST
+            return redirect('weekly_review')  # PRG pattern
     else:
         form = ReviewForm()
 
-    # Pobierz ostatni plan (żeby wyświetlić "Aktualny Fokus")
     last_review = ReviewSession.objects.filter(user=user).order_by('-date').first()
 
-    # --- 2. Alerty Recurring (Przerwane cykle) ---
-    today = date.today()
+    # ----------------------------------------------------
+    # 2. Tickler File & Stale Tasks
+    # ----------------------------------------------------
+    tasks_due_for_review = tickler.get_tasks_for_review(user)
+    stale_tasks = tickler.get_stale_waiting_tasks(user)
+
+    # ----------------------------------------------------
+    # 3. Alerty Operacyjne (WIP, Recurring)
+    # ----------------------------------------------------
+    # WIP Limit
+    active_tasks_count = Task.objects.filter(user=user, status__in=['scheduled', 'paused']).count()
+    wip_limit = getattr(user.profile, 'wip_limit', 5)
+    wip_alert = None
+    if active_tasks_count > wip_limit:
+        wip_alert = f"Masz {active_tasks_count} aktywnych zadań (Limit: {wip_limit})."
+
+    # Broken Recurring Cycles
     broken_cycles = []
     active_patterns = RecurringPattern.objects.filter(user=user, is_active=True)
-
     for pat in active_patterns:
-        # Jeśli data następnego wykonania minęła...
         if pat.next_run_date < today:
-            # ...i nie ma aktywnego zadania z tego szablonu
             has_active = Task.objects.filter(
                 recurring_pattern=pat,
                 status__in=['todo', 'scheduled', 'overdue']
@@ -97,64 +110,54 @@ def weekly_review_view(request):
             if not has_active:
                 broken_cycles.append(pat)
 
-    # 1. Zadania, które "wyskoczyły" w kalendarzu
-    tasks_due_for_review = tickler.get_tasks_for_review(request.user)
-    # 2. "Zgniłe" oczekiwania (Alert)
-    stale_tasks = tickler.get_stale_waiting_tasks(request.user)
+    # ----------------------------------------------------
+    # 4. Alerty Strategiczne (Projekty, Cele, Obszary)
+    # ----------------------------------------------------
 
-    # 3. WIP Alert (Work In Progress)
-    # Liczymy zadania zaplanowane na dziś (scheduled) oraz wstrzymane (paused) - czyli te "na stole"
-    active_tasks_count = Task.objects.filter(
-        user=request.user,
-        status__in=['scheduled', 'paused']
-    ).count()
-
-    wip_limit = request.user.profile.wip_limit
-    wip_alert = None
-
-    if active_tasks_count > wip_limit:
-        wip_alert = f"Masz {active_tasks_count} aktywnych zadań (Limit: {wip_limit}). Dokończ coś zanim zaczniesz nowe!"
-
-    # A. Puste Projekty (Zombie Projects)
-    # Projekty aktywne, które nie mają żadnych zadań (ani zakończonych, ani w toku)
+    # Puste Projekty
     empty_projects = Project.objects.filter(user=user, status='active').annotate(
         total_tasks=Count('tasks')
     ).filter(total_tasks=0)
 
-    # B. Cele bez postępu (Stagnant Goals)
-    # Cele aktywne, deadline < 14 dni, postęp < 20% (lub 0.2)
-    # Uwaga: Zakładam, że pole 'progress' w Goal jest float 0-100.
+    # Cele bez postępu (Stagnant)
+    # Deadline < 14 dni i Progress < 20%
     warning_date = today + timedelta(days=14)
+    # Zakładamy, że pole progress istnieje w modelu Goal (dodane w poprzednim kroku)
     stagnant_goals = Goal.objects.filter(
         user=user,
-        # status='active', # Jeśli masz pole status w Goal
         deadline__lte=warning_date,
-        progress__lt=20  # < 20%
+        progress__lt=20
     )
 
-    # 1. Pobierz zadania do przejrzenia (Tickler File)
-    waiting_tasks = Task.objects.filter(user=request.user, status='waiting')
-    delegated_tasks = Task.objects.filter(user=request.user, status='delegated')
-    postponed_tasks = Task.objects.filter(user=request.user, status='postponed')
+    # Zaniedbane Obszary (Neglected Areas) - NOWE
+    # Obszary, w których nie ukończono żadnego zadania w ostatnich 7 dniach
+    week_ago = today - timedelta(days=7)
+    neglected_areas = []
+    all_areas = Area.objects.filter(user=user)  # Można dodać is_active=True
 
-    # 2. Alerty (Zadania 'Paused' > 3 dni - uproszczona logika)
-    three_days_ago = timezone.now() - timedelta(days=3)
-    stale_paused = Task.objects.filter(user=request.user, status='paused', updated_at__lte=three_days_ago)
+    for area in all_areas:
+        completed_count = Task.objects.filter(
+            area=area,
+            status='done',
+            updated_at__gte=week_ago
+        ).count()
 
+        if completed_count == 0:
+            neglected_areas.append(area)
 
     return render(request, 'reports/weekly_review.html', {
-        'due_review': tasks_due_for_review,
-        'stale_tasks': stale_tasks,
-        'waiting_tasks': waiting_tasks,
-        'delegated_tasks': delegated_tasks,
-        'postponed_tasks': postponed_tasks,
-        'stale_paused': stale_paused,
-        'wip_alert': wip_alert,
-        'empty_projects': empty_projects,
-        'stagnant_goals': stagnant_goals,
-        'broken_cycles': broken_cycles,
         'review_form': form,
         'last_review': last_review,
+
+        'due_review': tasks_due_for_review,
+        'stale_tasks': stale_tasks,
+
+        'wip_alert': wip_alert,
+        'broken_cycles': broken_cycles,
+
+        'empty_projects': empty_projects,
+        'stagnant_goals': stagnant_goals,
+        'neglected_areas': neglected_areas  # <-- Przekazujemy
     })
 
 

@@ -2,6 +2,7 @@
 import django_filters
 from django import forms
 from .models import Task
+from apps.areas.models import Area
 from apps.contexts.models import Context
 
 class TaskFilter(django_filters.FilterSet):
@@ -29,6 +30,11 @@ class TaskFilter(django_filters.FilterSet):
     energy_required = django_filters.ChoiceFilter(
         choices=[(1, 'Niska'), (2, 'Średnia'), (3, 'Wysoka')],
         label="Energia",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    area = django_filters.ModelChoiceFilter(
+        queryset=Area.objects.all(),
+        label="Obszar",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
