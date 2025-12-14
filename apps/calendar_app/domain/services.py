@@ -100,6 +100,7 @@ class SchedulerService:
 
         # Stan Schedulera (Context Awareness)
         last_project_id = None
+        sequence_count = 0
 
         for window in windows:
             current_time = window.start
@@ -126,7 +127,8 @@ class SchedulerService:
                         task,
                         now,
                         slot_energy_level=slot_energy,
-                        last_project_id=last_project_id  # <-- Kluczowa zmiana
+                        last_project_id=last_project_id,
+                        sequence_count=sequence_count
                     )
                     scored_candidates.append((task, score))
 
@@ -156,11 +158,14 @@ class SchedulerService:
                     current_time = end_time
                     remaining_tasks.remove(best_candidate)
 
-                    # Aktualizujemy kontekst dla następnej iteracji
+                    # Aktualizacja licznika serii
+                    if best_candidate.project_id and best_candidate.project_id == last_project_id:
+                        sequence_count += 1
+                    else:
+                        sequence_count = 0  # Reset (nowy projekt lub brak projektu)
+
                     last_project_id = best_candidate.project_id
                 else:
-                    # Żadne zadanie nie mieści się w tym oknie.
-                    # Przerywamy pętlę while i idziemy do następnego okna.
                     break
 
         return schedule

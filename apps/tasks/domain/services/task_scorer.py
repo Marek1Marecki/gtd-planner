@@ -26,7 +26,8 @@ class TaskScorer:
             task: TaskEntity,
             now: datetime,
             slot_energy_level: int = 1,
-            last_project_id: Optional[int] = None
+            last_project_id: Optional[int] = None,
+            sequence_count: int = 0
         ) -> float:
 
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
@@ -168,12 +169,23 @@ class TaskScorer:
         if task.is_milestone:
             milestone_bonus = self.weights['bonus_milestone']
 
+        # --- NOWE: Diminishing Sequence Bonus ---
+        seq_bonus = 0.0
+        if last_project_id and task.project_id == last_project_id:
+            base_bonus = self.weights.get('bonus_sequence', 0.5)
+            # Spadek wykładniczy: 100% -> 80% -> 64% -> 51% ...
+            decay_factor = 0.8
+            seq_bonus = base_bonus * (decay_factor ** sequence_count)
+
         # Sumowanie
         total_score = base_score + \
                       (self.weights['w_urgency'] * urgency_score) + \
-                      (self.weights.get('w_goal_urgency', 1.0) * goal_urgency) + \
-                      (self.weights['w_project_urgency'] * project_urgency_score) + \
-                      energy_bonus + cpm_bonus + seq_bonus + milestone_bonus
+                      (1.0 * goal_urgency) + \
+                      (1.0 * project_urgency_score) + \
+                      energy_bonus + \
+                      cpm_bonus + \
+                      milestone_bonus + \
+                      seq_bonus
 
         return round(total_score, 4)
 
