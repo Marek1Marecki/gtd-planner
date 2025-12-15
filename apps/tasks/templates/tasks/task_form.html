@@ -80,6 +80,33 @@
                             </div>
                         </div>
 
+                        <!-- MIEJSCE NA ALERT (Domyślnie ukryty) -->
+                        <div id="decomposition-alert" class="alert alert-warning mt-3 d-none">
+                            <i class="bi bi-lightbulb-fill"></i>
+                            To zadanie jest długie (>2h).
+                            <br>
+                            <strong>Sugestia:</strong> Rozważ rozbicie go na mniejsze zadania lub użyj Checklisty.
+                        </div>
+
+                        <!-- SKRYPT DO OBSŁUGI -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const maxInput = document.getElementById('id_duration_max');
+                                const alertBox = document.getElementById('decomposition-alert');
+
+                                if (maxInput) {
+                                    maxInput.addEventListener('input', function() {
+                                        const val = parseInt(this.value);
+                                        if (val > 120) {
+                                            alertBox.classList.remove('d-none'); // Pokaż
+                                        } else {
+                                            alertBox.classList.add('d-none'); // Ukryj
+                                        }
+                                    });
+                                }
+                            });
+                        </script>
+
                         <!-- Energia i Typ -->
                         <div class="row mb-3">
                             <div class="col-md-6">

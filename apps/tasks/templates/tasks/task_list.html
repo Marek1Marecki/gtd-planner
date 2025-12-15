@@ -88,6 +88,15 @@
                         <a href="{% url 'task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary" title="Edytuj">
                             <i class="bi bi-pencil"></i>
                         </a>
+
+                        <!-- Tiny Step (tylko dla trudnych lub długich) -->
+                        {% if task.complexity >= 4 or task.duration_expected > 60 %}
+                            <button class="btn btn-sm btn-outline-warning" title="Utwórz Mały Krok (5 min)"
+                                    hx-post="{% url 'task_tiny_step' task.pk %}"
+                                    hx-swap="outerHTML">
+                                <i class="bi bi-footprint"></i>
+                            </button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

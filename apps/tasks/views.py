@@ -272,3 +272,31 @@ def checklist_delete_view(request, item_id):
 def task_detail_hx_view(request, pk):
     task = get_object_or_404(Task, pk=pk, user=request.user)
     return render(request, 'tasks/partials/task_detail_sidebar.html', {'task': task})
+
+
+@require_http_methods(["POST"])
+@login_required
+def task_tiny_step_view(request, pk):
+    """Tworzy 5-minutowe zadanie wstępne i blokuje oryginał."""
+    original_task = get_object_or_404(Task, pk=pk, user=request.user)
+
+    # Tworzymy Tiny Step
+    tiny_task = Task.objects.create(
+        user=request.user,
+        title=f"START: {original_task.title}",
+        description=f"5-minutowa rozgrzewka dla zadania: {original_task.title}",
+        project=original_task.project,
+        area=original_task.area,
+        context=original_task.context,
+        duration_min=5,
+        duration_max=5,
+        priority=original_task.priority,
+        status='todo'
+    )
+
+    # Blokujemy oryginał
+    original_task.status = 'blocked'
+    original_task.blocked_by.add(tiny_task)
+    original_task.save()
+
+    return HttpResponse(f'<span class="badge bg-success">Utworzono: {tiny_task.title}</span>')
