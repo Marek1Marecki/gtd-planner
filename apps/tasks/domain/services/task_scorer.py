@@ -177,6 +177,25 @@ class TaskScorer:
             decay_factor = 0.8
             seq_bonus = base_bonus * (decay_factor ** sequence_count)
 
+        # --- AGING BONUS ---
+        aging_bonus = 0.0
+
+        # Używamy ready_since, a jak brak (np. stare zadania), to fallback do created_at (lub 0)
+        start_time = task.ready_since if task.ready_since else task.created_at  # Tutaj w Entity musisz mieć też created_at
+
+        # Jeśli nadal None (np. zadanie jest blocked), bonus = 0
+        if start_time:
+            if start_time.tzinfo is None and now.tzinfo:
+                now = now.replace(tzinfo=timezone.utc)
+
+            wait_time = now - start_time
+            hours_waiting = wait_time.total_seconds() / 3600
+
+            # Wzór: max bonus po 72h (3 dni) - przykładowo
+            max_wait_hours = 72.0
+            if hours_waiting > 0:
+                aging_bonus = 1.0 * min(1.0, hours_waiting / max_wait_hours)
+
         # Sumowanie
         total_score = base_score + \
                       (self.weights['w_urgency'] * urgency_score) + \
@@ -185,7 +204,8 @@ class TaskScorer:
                       energy_bonus + \
                       cpm_bonus + \
                       milestone_bonus + \
-                      seq_bonus
+                      seq_bonus + \
+                      aging_bonus
 
         return round(total_score, 4)
 

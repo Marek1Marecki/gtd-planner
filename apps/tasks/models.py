@@ -133,6 +133,9 @@ class Task(models.Model):
 
     goal = models.ForeignKey('goals.Goal', null=True, blank=True, on_delete=models.SET_NULL, related_name='tasks')
 
+    # NOWE POLE: Data wejścia w stan gotowości
+    ready_since = models.DateTimeField(null=True, blank=True, help_text="Kiedy zadanie stało się wykonalne (TODO/SCHEDULED)")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

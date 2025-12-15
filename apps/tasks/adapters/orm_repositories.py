@@ -54,6 +54,7 @@ class DjangoTaskRepository(ITaskRepository):
             goal_deadline=goal_deadline,
             project_deadline=project_deadline,
             is_milestone=model.is_milestone,
+            ready_since=model.ready_since,
 
         )
 
@@ -84,6 +85,8 @@ class DjangoTaskRepository(ITaskRepository):
             'area_id': task.area_id,
             'is_milestone': task.is_milestone,
             'goal_id': task.goal_id,
+            'ready_since': task.ready_since,
+
         }
 
         if task.id:

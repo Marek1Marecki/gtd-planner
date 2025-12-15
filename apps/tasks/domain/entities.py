@@ -52,6 +52,7 @@ class TaskEntity:
     area_color: Optional[str] = None
     goal_deadline: Optional[datetime] = None
     project_deadline: Optional[datetime] = None
+    ready_since: Optional[datetime] = None
 
 
     @property

@@ -7,6 +7,7 @@ from apps.core import views as core_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', core_views.dashboard_view, name='home'), # Pusta ścieżka = Home
+    path('accounts/', include('django.contrib.auth.urls')),
     # Tutaj podpinamy nasze aplikacje:
     path('tasks/', include('apps.tasks.urls')),
     path('calendar/', include('apps.calendar_app.urls')),

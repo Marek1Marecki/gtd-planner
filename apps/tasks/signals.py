@@ -1,10 +1,11 @@
 # apps/tasks/signals.py
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from .models import Task
 from apps.reports.services import ActivityLogger
 from apps.reports.models import ActivityLog
-
+from django.utils import timezone
+from .models import Task
+from .domain.entities import TaskStatus
 
 @receiver(pre_save, sender=Task)
 def track_task_changes(sender, instance, **kwargs):
@@ -88,3 +89,35 @@ def update_goal_progress(sender, instance, **kwargs):
             if goal.progress != new_progress:
                 goal.progress = new_progress
                 goal.save()
+
+
+@receiver(pre_save, sender=Task)
+def update_ready_since(sender, instance, **kwargs):
+    """Aktualizuje ready_since przy wejściu w status aktywny."""
+
+    active_statuses = ['todo', 'scheduled']
+    inactive_statuses = ['blocked', 'waiting', 'delegated', 'postponed', 'paused', 'inbox']
+
+    if instance.id:
+        try:
+            old_instance = Task.objects.get(id=instance.id)
+            old_status = old_instance.status
+        except Task.DoesNotExist:
+            old_status = None
+
+        # Scenariusz 1: Nowe zadanie tworzone od razu jako TODO
+        if not old_status and instance.status in active_statuses:
+            instance.ready_since = timezone.now()
+
+        # Scenariusz 2: Zmiana z NIEAKTYWNEGO na AKTYWNY (np. Blocked -> Todo)
+        elif old_status in inactive_statuses and instance.status in active_statuses:
+            instance.ready_since = timezone.now()
+
+        # Scenariusz 3: Zadanie wciąż nieaktywne -> czyścimy ready_since (opcjonalne, ale czystsze)
+        elif instance.status in inactive_statuses:
+            instance.ready_since = None
+
+    else:
+        # Nowe zadanie
+        if instance.status in active_statuses:
+            instance.ready_since = timezone.now()
