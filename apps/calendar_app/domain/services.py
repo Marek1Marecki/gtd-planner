@@ -92,7 +92,13 @@ class SchedulerService:
         Uwzględnia: Priorytet, Energię oraz Ciągłość Projektu (Sequence Bonus).
         """
 
-        scorer = TaskScorer()
+        # 1. Ustal strategię
+        strategy_name = getattr(user_profile, 'current_strategy', 'balanced')
+        # 2. Pobierz wagi
+        weights = TaskScorer.get_weights_for_strategy(strategy_name)
+        # 3. Zainicjuj Scorera z tymi wagami
+        scorer = TaskScorer(weights=weights)
+
         schedule = []
 
         # Kopia listy zadań do zaplanowania

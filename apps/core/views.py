@@ -131,20 +131,31 @@ def dashboard_view(request):
 @require_http_methods(["POST"])
 @login_required
 def set_work_mode_view(request):
-    mode = request.POST.get('mode')  # 'normal', 'focus', 'light'
+    mode = request.POST.get('mode')
     profile = request.user.profile
 
     if mode == 'focus':
+        # Tryb Fokus: Małe bufory + Strategia Deep Work
         profile.morning_buffer_minutes = 15
-        profile.between_tasks_buffer_minutes = 0  # Bez przerw!
+        profile.between_tasks_buffer_minutes = 0
+        profile.current_strategy = 'deep_work'
+
     elif mode == 'light':
+        # Tryb Luz: Duże bufory + Strategia Rozgrzewka
         profile.morning_buffer_minutes = 45
-        profile.between_tasks_buffer_minutes = 15  # Dużo luzu
+        profile.between_tasks_buffer_minutes = 15
+        profile.current_strategy = 'warmup'
+
     else:  # normal
         profile.morning_buffer_minutes = 30
         profile.between_tasks_buffer_minutes = 5
+        profile.current_strategy = 'balanced'
 
     profile.save()
 
-    # Zwróć tylko fragment HTML z informacją (np. Toast lub badge)
-    return HttpResponse(f'<span class="badge bg-secondary">Tryb: {mode.title()}</span>')
+    # Wyświetl informację o trybie i strategii
+    label_map = {'deep_work': 'Głęboka Praca', 'warmup': 'Rozgrzewka', 'balanced': 'Zrównoważony'}
+    strat_label = label_map.get(profile.current_strategy, 'Standard')
+
+    return HttpResponse(
+        f'<span class="badge bg-secondary" title="Strategia: {strat_label}">Tryb: {mode.title()}</span>')

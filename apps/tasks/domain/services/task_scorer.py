@@ -190,6 +190,52 @@ class TaskScorer:
         return round(total_score, 4)
 
 
+    @staticmethod
+    def get_weights_for_strategy(strategy_name: str) -> dict:
+        """Zwraca zestaw wag dla danej strategii."""
+        # Wagi domyślne (Balanced)
+        defaults = {
+            'w_priority': 0.4,
+            'w_duration': 0.3,
+            'w_complexity': 0.3,
+            'w_urgency': 1.5,
+            'w_goal_urgency': 1.0,
+            'w_project_urgency': 1.0,
+            'bonus_sequence': 0.5,
+            'bonus_energy_match': 0.5,
+            'bonus_milestone': 2.0
+        }
+
+        if strategy_name == 'warmup':
+            # Rozgrzewka: Promuj zadania proste (complexity) i krótkie (duration)
+            # Ignoruj priorytet (chcemy się rozkręcić, a nie robić ważne rzeczy)
+            return {
+                **defaults,
+                'w_complexity': 0.8,
+                'w_duration': 0.6,
+                'w_priority': 0.1
+            }
+
+        elif strategy_name == 'deep_work':
+            # Głęboka praca: Bardzo wysoki bonus za ciągłość projektu
+            return {
+                **defaults,
+                'bonus_sequence': 2.5
+            }
+
+        elif strategy_name == 'deadline':
+            # Tryb awaryjny: Liczą się tylko terminy (Urgency)
+            return {
+                **defaults,
+                'w_urgency': 3.0,
+                'w_goal_urgency': 2.0,
+                'w_project_urgency': 2.0,
+                'w_complexity': 0.0  # Trudność nie ma znaczenia, trzeba dowieźć
+            }
+
+        return defaults
+
+
 class RecurrenceService:
     def generate_daily_instances(self) -> List[Task]:
         """Sprawdza aktywne szablony i generuje zadania na dziś."""

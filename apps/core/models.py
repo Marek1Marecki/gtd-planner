@@ -24,6 +24,18 @@ class UserProfile(models.Model):
     energy_profile = models.JSONField(default=dict, blank=True)
     wip_limit = models.PositiveIntegerField(default=5, help_text="Maksymalna liczba zadań w toku")
 
+    # NOWE: Strategia algorytmu
+    current_strategy = models.CharField(
+        max_length=20,
+        default='balanced',
+        choices=[
+            ('balanced', 'Zrównoważony'),
+            ('warmup', 'Rozgrzewka (Proste/Krótkie)'),
+            ('deep_work', 'Głęboka Praca (Projekt)'),
+            ('deadline', 'Tryb Awaryjny (Terminy)')
+        ]
+    )
+
     def __str__(self):
         return f"Profile of {self.user.username}"
 

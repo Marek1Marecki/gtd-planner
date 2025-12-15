@@ -84,20 +84,35 @@
         <!-- Tryb Pracy -->
         <div class="px-3 mb-3">
             <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Tryb Pracy</small>
+
+            {% with strategy=user.profile.current_strategy %}
             <div class="btn-group w-100 mt-1" role="group">
-                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
-                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "normal"}' hx-swap="none">
+
+                <!-- Przycisk Normal -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary text-white {% if strategy == 'balanced' %}active bg-primary{% endif %}"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "normal"}' hx-swap="none"
+                        onclick="setActiveMode(this)">
                     Norm
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
-                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "focus"}' hx-swap="none" title="Fokus">
+
+                <!-- Przycisk Fokus -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary text-white {% if strategy == 'deep_work' %}active bg-primary{% endif %}"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "focus"}' hx-swap="none" title="Fokus"
+                        onclick="setActiveMode(this)">
                     🔥
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary text-white"
-                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "light"}' hx-swap="none" title="Luz">
+
+                <!-- Przycisk Luz -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary text-white {% if strategy == 'warmup' %}active bg-primary{% endif %}"
+                        hx-post="{% url 'set_work_mode' %}" hx-vals='{"mode": "light"}' hx-swap="none" title="Luz"
+                        onclick="setActiveMode(this)">
                     🍃
                 </button>
             </div>
+            {% endwith %}
         </div>
 
         <div class="dropdown">
@@ -165,6 +180,18 @@
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             })
         });
+    </script>
+
+    <script>
+        function setActiveMode(btn) {
+            // Usuń klasę 'active' i 'bg-primary' ze wszystkich przycisków w tej grupie
+            const group = btn.closest('.btn-group');
+            group.querySelectorAll('.btn').forEach(b => {
+                b.classList.remove('active', 'bg-primary');
+            });
+            // Dodaj do klikniętego
+            btn.classList.add('active', 'bg-primary');
+        }
     </script>
 
 </body>
