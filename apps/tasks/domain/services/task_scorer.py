@@ -27,7 +27,8 @@ class TaskScorer:
             now: datetime,
             slot_energy_level: int = 1,
             last_project_id: Optional[int] = None,
-            sequence_count: int = 0
+            sequence_count: int = 0,
+            hours_to_end_of_day: Optional[float] = None
         ) -> float:
 
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
@@ -196,6 +197,27 @@ class TaskScorer:
             if hours_waiting > 0:
                 aging_bonus = 1.0 * min(1.0, hours_waiting / max_wait_hours)
 
+        # --- End of Day (EOD) Factor ---
+        eod_bonus = 0.0
+
+        if hours_to_end_of_day is not None and hours_to_end_of_day < 2.0:
+            # Jesteśmy w "strefie śmierci" (ostatnie 2h dnia)
+
+            # 1. Promuj zadania krótkie (<= 30 min)
+            if task.duration_expected <= 30:
+                eod_bonus += 0.5
+
+            # 2. Promuj zadania z dzisiejszym deadline (Last Minute)
+            if task.due_date:
+                # Sprawdź czy deadline jest dziś
+                # (Uproszczenie: porównujemy daty, zakładając zgodność stref)
+                if task.due_date.date() <= now.date():
+                    eod_bonus += 1.0
+
+            # 3. Zniechęcaj do zadań trudnych (Mental Fatigue)
+            if task.complexity >= 4:
+                eod_bonus -= 0.5
+
         # Sumowanie
         total_score = base_score + \
                       (self.weights['w_urgency'] * urgency_score) + \
@@ -205,7 +227,8 @@ class TaskScorer:
                       cpm_bonus + \
                       milestone_bonus + \
                       seq_bonus + \
-                      aging_bonus
+                      aging_bonus + \
+                      eod_bonus
 
         return round(total_score, 4)
 

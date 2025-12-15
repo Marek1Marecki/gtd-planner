@@ -54,6 +54,8 @@ class TaskEntity:
     project_deadline: Optional[datetime] = None
     ready_since: Optional[datetime] = None
 
+    created_at: Optional[datetime] = None
+
 
     @property
     def duration_expected(self) -> int:

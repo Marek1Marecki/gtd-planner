@@ -88,30 +88,29 @@ class SchedulerService:
         user_profile  # Obiekt UserProfile
     ) -> List[ScheduledItem]:
         """
-        Inteligentny algorytm alokacji (Bin Packing) z dynamicznym scoringiem w pętli.
-        Uwzględnia: Priorytet, Energię oraz Ciągłość Projektu (Sequence Bonus).
+        Inteligentny algorytm alokacji (Bin Packing) z pełnym scoringiem.
+        Uwzględnia: Priorytet, Energię, Ciągłość (Sequence) i Presję Końca Dnia (EOD).
         """
 
-        # 1. Ustal strategię
-        strategy_name = getattr(user_profile, 'current_strategy', 'balanced')
-        # 2. Pobierz wagi
-        weights = TaskScorer.get_weights_for_strategy(strategy_name)
-        # 3. Zainicjuj Scorera z tymi wagami
-        scorer = TaskScorer(weights=weights)
-
+        scorer = TaskScorer()
         schedule = []
 
-        # Kopia listy zadań do zaplanowania
+        # Kopia listy zadań
         remaining_tasks = [t for t in tasks if t.is_active()]
 
-        # Stan Schedulera (Context Awareness)
+        # Stan Schedulera
         last_project_id = None
         sequence_count = 0
+
+        # Ustal koniec dnia dla tego przebiegu (ostatni moment ostatniego okna)
+        absolute_end_time = now
+        if windows:
+            absolute_end_time = windows[-1].end
 
         for window in windows:
             current_time = window.start
 
-            # Pobierz poziom energii dla okna (uproszczone)
+            # Poziom Energii Okna
             current_hour_str = current_time.strftime("%H")
             slot_energy = 1
             if user_profile and user_profile.energy_profile:
@@ -121,12 +120,14 @@ class SchedulerService:
                 if val is not None:
                     slot_energy = int(val)
 
-            # PĘTLA ALOKACJI W OKNIE
-            # Dopóki jest czas i zadania
+            # Pętla Alokacji w Oknie
             while remaining_tasks and (window.end - current_time).total_seconds() > 0:
 
-                # 1. Przelicz Score dla wszystkich kandydatów w TYM MOMENCIE
-                # (Score zależy od last_project_id, więc zmienia się po każdym wstawieniu!)
+                # Oblicz czas do końca dnia (EOD Factor)
+                time_to_end = absolute_end_time - current_time
+                hours_to_end = time_to_end.total_seconds() / 3600
+
+                # 1. Scoring
                 scored_candidates = []
                 for task in remaining_tasks:
                     score = scorer.calculate_score(
@@ -134,21 +135,22 @@ class SchedulerService:
                         now,
                         slot_energy_level=slot_energy,
                         last_project_id=last_project_id,
-                        sequence_count=sequence_count
+                        sequence_count=sequence_count,
+                        hours_to_end_of_day=hours_to_end  # <-- EOD Factor
                     )
                     scored_candidates.append((task, score))
 
-                # Sortuj malejąco po Score
+                # Sortuj
                 scored_candidates.sort(key=lambda x: x[1], reverse=True)
 
-                # 2. Wybierz najlepszego, który się mieści w pozostałym czasie okna
+                # 2. Wybór (Bin Packing)
                 best_candidate = None
                 window_remaining_minutes = (window.end - current_time).total_seconds() / 60
 
                 for task, score in scored_candidates:
                     if task.duration_expected <= window_remaining_minutes:
                         best_candidate = task
-                        break  # Bierzemy pierwszego (najlepszego), który się mieści
+                        break
 
                 if best_candidate:
                     # Planujemy
@@ -160,18 +162,18 @@ class SchedulerService:
                         end=end_time
                     ))
 
-                    # Aktualizujemy czas i listę
                     current_time = end_time
                     remaining_tasks.remove(best_candidate)
 
-                    # Aktualizacja licznika serii
+                    # Aktualizacja Sequence
                     if best_candidate.project_id and best_candidate.project_id == last_project_id:
                         sequence_count += 1
                     else:
-                        sequence_count = 0  # Reset (nowy projekt lub brak projektu)
+                        sequence_count = 0
 
                     last_project_id = best_candidate.project_id
                 else:
+                    # Nikt się nie mieści w tym oknie
                     break
 
         return schedule
