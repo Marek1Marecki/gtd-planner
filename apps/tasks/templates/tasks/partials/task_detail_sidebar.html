@@ -7,3 +7,21 @@
 
 <hr>
 <!-- Tu w przyszłości komentarze -->
+
+<hr>
+<!-- Sekcja "Nie zdążyłem" -->
+<div class="card bg-light border-warning">
+    <div class="card-body p-2">
+        <h6 class="card-title text-warning"><i class="bi bi-hourglass-split"></i> Nie zdążyłeś?</h6>
+        <p class="card-text small text-muted">Zamknij to zadanie i utwórz nowe na resztę czasu.</p>
+
+        <form hx-post="{% url 'task_split' task.id %}"
+              hx-swap="outerHTML"
+              hx-on="htmx:afterRequest: window.location.reload()"
+              class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="number" name="remaining_minutes" class="form-control form-control-sm" placeholder="Ile minut?" required style="max-width: 100px;">
+            <button type="submit" class="btn btn-sm btn-warning">Przełóż resztę</button>
+        </form>
+    </div>
+</div>

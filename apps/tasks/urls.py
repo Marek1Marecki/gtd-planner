@@ -15,5 +15,6 @@ urlpatterns = [
     path('checklist/<int:item_id>/delete/', views.checklist_delete_view, name='checklist_delete'),
     path('<int:pk>/detail_hx/', views.task_detail_hx_view, name='task_detail_hx'),
     path('<int:pk>/tiny-step/', views.task_tiny_step_view, name='task_tiny_step'),
+    path('<int:pk>/split/', views.task_split_view, name='task_split'),
 
 ]

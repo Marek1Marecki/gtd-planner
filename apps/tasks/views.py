@@ -300,3 +300,44 @@ def task_tiny_step_view(request, pk):
     original_task.save()
 
     return HttpResponse(f'<span class="badge bg-success">Utworzono: {tiny_task.title}</span>')
+
+
+@require_http_methods(["POST"])
+@login_required
+def task_split_view(request, pk):
+    """Zamyka obecne zadanie i tworzy nowe na pozostały czas."""
+    original = get_object_or_404(Task, pk=pk, user=request.user)
+
+    try:
+        remaining_mins = int(request.POST.get('remaining_minutes'))
+    except (TypeError, ValueError):
+        return HttpResponse("Błędny czas", status=400)
+
+    if remaining_mins <= 0:
+        return HttpResponse("Czas musi być dodatni", status=400)
+
+    # 1. Zamknij oryginał
+    original.status = 'done'
+    original.save()
+
+    # 2. Utwórz nowe zadanie (Resztę)
+    new_task = Task.objects.create(
+        user=request.user,
+        title=f"[Dokończenie] {original.title}",
+        description=original.description,  # Kopiujemy opis
+        project=original.project,
+        area=original.area,
+        context=original.context,
+        priority=original.priority,  # Zachowujemy wysoki priorytet
+        energy_required=original.energy_required,
+        is_private=original.is_private,
+
+        # Nowy czas
+        duration_min=remaining_mins,
+        duration_max=remaining_mins,
+
+        status='todo'  # Trafi do Schedulera
+    )
+
+    # Odświeżamy widok (zwracamy np. sukces lub przeładowujemy)
+    return HttpResponse(f'<span class="badge bg-warning text-dark">Przełożono {remaining_mins} min</span>')
