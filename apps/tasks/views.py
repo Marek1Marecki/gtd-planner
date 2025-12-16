@@ -16,6 +16,8 @@ from .domain.entities import TaskEntity, TaskStatus
 from .models import ChecklistItem
 from apps.areas.models import Area
 from apps.goals.models import Goal
+from apps.reports.models import ActivityLog
+from django.contrib.contenttypes.models import ContentType
 
 
 @login_required
@@ -271,7 +273,19 @@ def checklist_delete_view(request, item_id):
 @login_required
 def task_detail_hx_view(request, pk):
     task = get_object_or_404(Task, pk=pk, user=request.user)
-    return render(request, 'tasks/partials/task_detail_sidebar.html', {'task': task})
+
+    # Pobierz historię aktywności dla tego zadania
+    # Używamy ContentType, aby znaleźć logi powiązane z modelem Task
+    ct = ContentType.objects.get_for_model(Task)
+    activities = ActivityLog.objects.filter(
+        content_type=ct,
+        object_id=task.id
+    ).order_by('-timestamp')
+
+    return render(request, 'tasks/partials/task_detail_sidebar.html', {
+        'task': task,
+        'activities': activities  # <-- Przekazujemy logi
+    })
 
 
 @require_http_methods(["POST"])
