@@ -153,3 +153,37 @@ class ReportService:
             colors.append(color)
 
         return {'labels': labels, 'data': counts, 'colors': colors}
+
+
+    def get_blocking_chains(self, user):
+        """
+        Zwraca listę 'łańcuchów': Zadania aktywne, które blokują inne zadania.
+        Struktura: [{ 'root': task, 'blocked_children': [task, task...] }]
+        """
+        from apps.tasks.models import Task
+
+        # 1. Znajdź zadania, które są blokerami (są w polu blocked_by innych zadań)
+        # i same są aktywne (TODO/SCHEDULED).
+        # To są nasze "Korki".
+
+        blockers = Task.objects.filter(
+            user=user,
+            status__in=['todo', 'scheduled'],
+            blocking__status='blocked'  # blocking to related_name dla 'blocked_by' (zdefiniowane w modelu Task?)
+        ).distinct()
+
+        # Sprawdźmy related_name w modelu Task.
+        # W kroku 2.5 (Faza 2) zdefiniowaliśmy: related_name='blocking'.
+
+        chains = []
+        for root in blockers:
+            # Znajdź zadania, które ten root bezpośrednio blokuje
+            children = root.blocking.filter(status='blocked')
+
+            if children.exists():
+                chains.append({
+                    'root': root,
+                    'children': children
+                })
+
+        return chains
