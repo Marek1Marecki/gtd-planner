@@ -140,8 +140,8 @@ class SchedulerService:
                     )
                     scored_candidates.append((task, score))
 
-                # Sortuj
-                scored_candidates.sort(key=lambda x: x[1], reverse=True)
+                # Sortuj malejąco po: 1. Score, 2. Odwróconym czasie (krótsze mają wyższy priorytet przy remisie)
+                scored_candidates.sort(key=lambda x: (x[1], -x[0].duration_expected), reverse=True)
 
                 # 2. Wybór (Bin Packing)
                 best_candidate = None

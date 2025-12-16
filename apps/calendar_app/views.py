@@ -7,6 +7,8 @@ from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
 from .adapters.google_calendar import GoogleCalendarAdapter
 from apps.calendar_app.domain.services import SchedulerService
 from apps.core.models import UserProfile
+from apps.tasks.models import Task
+
 
 @login_required
 def daily_view(request):
@@ -17,6 +19,29 @@ def daily_view(request):
     # 1. Kontekst Czasu
     today = date.today()
     now = datetime.now(timezone.utc)
+
+    # --- NOWE: Lazy Overdue Check (Sprzątanie przed planowaniem) ---
+    # Znajdź zadania, które są aktywne, ale ich termin minął (wczoraj lub dawniej)
+    # due_date jest typu Date (bez godziny) lub DateTime.
+    # Zakładamy DateField lub porównujemy date().
+
+    # Pobieramy kandydatów do przeterminowania
+    overdue_candidates = Task.objects.filter(
+        user=request.user,
+        status__in=['todo', 'scheduled'],
+        due_date__lt=today  # Ściśle mniejsze niż dzisiaj
+    )
+
+    if overdue_candidates.exists():
+        count = overdue_candidates.update(status='overdue')
+        print(f"Lazy Check: Zmieniono {count} zadań na OVERDUE.")
+
+    # 2. Pobierz Zadania (Teraz pobierze już bez tych overdue!)
+    task_repo = DjangoTaskRepository()
+    all_tasks = task_repo.get_active_tasks()  # Ta metoda filtruje tylko TODO/SCHEDULED
+
+    # Dodatkowo pobierzemy listę overdue, żeby wyświetlić w sekcji alarmowej
+    overdue_tasks = Task.objects.filter(user=request.user, status='overdue')
 
     # Pobierz profil (dla godzin)
     try:
@@ -128,6 +153,7 @@ def daily_view(request):
     return render(request, 'calendar/daily_view.html', {
         'timeline_items': timeline_items,
         'backlog_tasks': backlog_tasks,
+        'overdue_tasks': overdue_tasks,
         'today': today,
         'base_template': base_template
     })
