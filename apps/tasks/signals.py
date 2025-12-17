@@ -121,3 +121,16 @@ def update_ready_since(sender, instance, **kwargs):
         # Nowe zadanie
         if instance.status in active_statuses:
             instance.ready_since = timezone.now()
+
+
+@receiver(post_save, sender=Task)
+def track_recurring_completion(sender, instance, created, **kwargs):
+    """Zlicza ukończenie zadania cyklicznego."""
+    # Jeśli zadanie jest DONE, ma szablon i właśnie zmieniliśmy status
+    if not created and instance.status == 'done' and instance.recurring_pattern:
+        if hasattr(instance, '_old_status') and instance._old_status != 'done':
+            # Inkrementacja licznika
+            # Używamy F() dla bezpieczeństwa przy współbieżności (opcjonalnie)
+            from django.db.models import F
+            instance.recurring_pattern.completed_count = F('completed_count') + 1
+            instance.recurring_pattern.save()

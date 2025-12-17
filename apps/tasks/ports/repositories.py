@@ -32,3 +32,8 @@ class ITaskRepository(ABC):
     def has_active_blockers(self, task_id: int) -> bool:
         """Sprawdza, czy zadanie ma jakiekolwiek blokery w stanie niedokończonym."""
         pass
+
+    @abstractmethod
+    def increment_recurring_stats(self, pattern_id: int):
+        """Zwiększa licznik completed_count w szablonie."""
+        pass

@@ -30,8 +30,17 @@ class RecurringPattern(models.Model):
     default_priority = models.IntegerField(default=3)
     default_duration_min = models.IntegerField(default=30)
 
+    # Liczniki skuteczności
+    generated_count = models.PositiveIntegerField(default=0)
+    completed_count = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return f"Pattern: {self.title} (Co {self.interval_days} dni)"
+
+    @property
+    def completion_rate(self):
+        if self.generated_count == 0: return 0
+        return int((self.completed_count / self.generated_count) * 100)
 
 
 class Task(models.Model):
@@ -171,6 +180,7 @@ def task_changed(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Task)
 def check_recurrence_on_completion(sender, instance, **kwargs):
     if instance.status == 'done' and instance.recurring_pattern:
+        # Import z nowego miejsca (przez __init__)
         from apps.tasks.domain.services import RecurrenceService
         service = RecurrenceService()
         service.handle_task_completion(instance)

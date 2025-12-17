@@ -125,7 +125,9 @@ class ReportService:
 
             stats.append({
                 'title': pat.title,
-                'avg_delay': round(avg_delay, 1)
+                'avg_delay': round(avg_delay, 1),
+                'rate': pat.completion_rate,
+                'total': pat.generated_count
             })
 
         return stats

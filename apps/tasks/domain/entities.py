@@ -53,6 +53,7 @@ class TaskEntity:
     goal_deadline: Optional[datetime] = None
     project_deadline: Optional[datetime] = None
     ready_since: Optional[datetime] = None
+    recurring_pattern_id: Optional[int] = None
 
     created_at: Optional[datetime] = None
 

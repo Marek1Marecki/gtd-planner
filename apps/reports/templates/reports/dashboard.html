@@ -203,6 +203,27 @@
                     });
                 }
 
+                let badgeClass = item.avg_delay < 1 ? 'bg-success' : 'bg-warning';
+
+                list.innerHTML += `
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>${item.title}</strong>
+                            <span class="badge ${badgeClass}">Opóźnienie: ${item.avg_delay} dni</span>
+                        </div>
+
+                        <!-- Pasek Skuteczności -->
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Skuteczność</span>
+                                <span>${item.rate}% (${item.total} gen.)</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: ${item.rate}%"></div>
+                            </div>
+                        </div>
+                    </li>`;
+
             })
             .catch(error => console.error('Błąd pobierania statystyk:', error));
     });

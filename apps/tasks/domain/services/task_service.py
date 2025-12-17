@@ -22,6 +22,13 @@ class TaskService:
         task.status = TaskStatus.DONE
         self.repository.save(task, user_id=None)  # user_id opcjonalny przy update
 
+        # --- NOWE: Zliczanie statystyk ---
+        # Sprawdzamy czy zadanie ma powiązany szablon (musisz mieć to pole w TaskEntity!)
+        # Jeśli nie masz pola w encji, możemy to zrobić "brzydko" w repozytorium przy zapisie.
+        # Ale załóżmy, że TaskEntity ma pole 'recurring_pattern_id'.
+        if getattr(task, 'recurring_pattern_id', None):
+            self.repository.increment_recurring_stats(task.recurring_pattern_id)
+
         # 3. Uruchom logikę AutoUnlock
         self._process_dependencies(task_id)
 

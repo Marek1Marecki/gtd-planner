@@ -48,6 +48,7 @@ class DjangoTaskRepository(ITaskRepository):
             context_id=model.context_id if model.context_id else None,
             area_id=model.area_id if model.area_id else None,
             goal_id=model.goal_id if model.goal_id else None,
+            recurring_pattern_id=model.recurring_pattern_id if model.recurring_pattern_id else None,
 
             # Pola "Enriched" (dane zaciągnięte z relacji dla UI/Algorytmu)
             area_color=model.area.color if model.area else None,
@@ -87,7 +88,6 @@ class DjangoTaskRepository(ITaskRepository):
             'is_milestone': task.is_milestone,
             'goal_id': task.goal_id,
             'ready_since': task.ready_since,
-            'created_at': task.created_at,
 
         }
 
@@ -142,3 +142,11 @@ class DjangoTaskRepository(ITaskRepository):
         except TaskModel.DoesNotExist:
             # Jeśli zadanie nie istnieje, technicznie nie ma blokerów (albo rzucamy błąd)
             return False
+
+    def increment_recurring_stats(self, pattern_id: int):
+        from apps.tasks.models import RecurringPattern
+        from django.db.models import F
+
+        RecurringPattern.objects.filter(id=pattern_id).update(
+            completed_count=F('completed_count') + 1
+        )
