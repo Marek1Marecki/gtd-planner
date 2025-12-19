@@ -16,5 +16,6 @@ urlpatterns = [
     path('<int:pk>/detail_hx/', views.task_detail_hx_view, name='task_detail_hx'),
     path('<int:pk>/tiny-step/', views.task_tiny_step_view, name='task_tiny_step'),
     path('<int:pk>/split/', views.task_split_view, name='task_split'),
+    path('<int:pk>/recurrence/', views.task_recurrence_view, name='task_recurrence'),
 
 ]

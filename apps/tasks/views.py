@@ -18,6 +18,8 @@ from apps.areas.models import Area
 from apps.goals.models import Goal
 from apps.reports.models import ActivityLog
 from django.contrib.contenttypes.models import ContentType
+from .forms import RecurrenceForm
+from .models import RecurringPattern
 
 
 @login_required
@@ -355,3 +357,39 @@ def task_split_view(request, pk):
 
     # Odświeżamy widok (zwracamy np. sukces lub przeładowujemy)
     return HttpResponse(f'<span class="badge bg-warning text-dark">Przełożono {remaining_mins} min</span>')
+
+
+@login_required
+def task_recurrence_view(request, pk):
+    task = get_object_or_404(Task, pk=pk, user=request.user)
+
+    # Pobierz lub utwórz (pusty) wzorzec
+    pattern = task.recurring_pattern
+
+    if request.method == 'POST':
+        form = RecurrenceForm(request.POST, instance=pattern)
+        if form.is_valid():
+            # Jeśli to nowy wzorzec, musimy go utworzyć i przypisać
+            if not pattern:
+                pattern = form.save(commit=False)
+                pattern.user = request.user
+                pattern.project = task.project  # Dziedzicz projekt
+                pattern.save()
+                task.recurring_pattern = pattern
+                task.save()
+            else:
+                pattern = form.save()
+
+            # Zapisz dni tygodnia (bo to pole nie jest w modelu bezpośrednio jako M2M, tylko JSON)
+            pattern.week_days = form.cleaned_data['week_days']
+            pattern.save()
+
+            return redirect('task_list')  # lub powrót do zadania
+    else:
+        # Inicjalizacja formularza danymi
+        initial = {}
+        if pattern:
+            initial['week_days'] = pattern.week_days
+        form = RecurrenceForm(instance=pattern, initial=initial)
+
+    return render(request, 'tasks/recurrence_form.html', {'form': form, 'task': task})

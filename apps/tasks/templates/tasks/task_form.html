@@ -157,12 +157,14 @@
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-save me-1"></i> Zapisz
                             </button>
-                            {% if not task.recurring_pattern %}
-                                <a href="#" class="btn btn-outline-info" title="Konfiguruj cykl">
-                                    <i class="bi bi-arrow-repeat"></i> Powtarzaj
+                            {% if task.id %}
+                                <!-- Pokaż tylko w trybie EDYCJI -->
+                                <a href="{% url 'task_recurrence' task.id %}" class="btn btn-outline-info">
+                                    <i class="bi bi-arrow-repeat"></i> Konfiguruj Cykl
                                 </a>
                             {% else %}
-                                <span class="text-info"><i class="bi bi-arrow-repeat"></i> To jest zadanie cykliczne</span>
+                                <!-- W trybie TWORZENIA pokaż info lub nic -->
+                                <span class="text-muted small ms-2">(Zapisz zadanie, aby ustawić powtarzalność)</span>
                             {% endif %}
                         </div>
                     </form>

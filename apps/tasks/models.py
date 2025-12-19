@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from apps.tasks.domain.entities import TaskStatus
+from dateutil.rrule import rrulestr
 
 
 class RecurringPattern(models.Model):
@@ -10,15 +11,33 @@ class RecurringPattern(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey('projects.Project', null=True, blank=True, on_delete=models.SET_NULL)
 
-    # Konfiguracja cyklu
-    class RecurrenceType(models.TextChoices):
-        FIXED = 'fixed', 'Sztywny (Kalendarzowy)'
-        DYNAMIC = 'dynamic', 'Dynamiczny (Po wykonaniu)'
+    # Typ interwału
+    class RecurrenceFrequency(models.TextChoices):
+        DAILY = 'DAILY', 'Codziennie'
+        WEEKLY = 'WEEKLY', 'Co tydzień'
+        MONTHLY = 'MONTHLY', 'Co miesiąc'
+        YEARLY = 'YEARLY', 'Co rok'
 
-    recurrence_type = models.CharField(max_length=10, choices=RecurrenceType.choices, default=RecurrenceType.FIXED)
+    frequency = models.CharField(
+        max_length=20,
+        choices=RecurrenceFrequency.choices,
+        default=RecurrenceFrequency.WEEKLY
+    )
 
-    # Interwał (np. co 7 dni)
-    interval_days = models.PositiveIntegerField(default=7)
+    interval = models.PositiveIntegerField(default=1, help_text="Co ile? (np. co 2 tygodnie)")
+
+    # Wybór dni tygodnia (dla WEEKLY) - przechowamy jako JSON lub oddzielne boole
+    # Najprościej: JSON list np. ['MO', 'WE']
+    week_days = models.JSONField(default=list, blank=True)
+
+    # Warunki końca
+    end_date = models.DateField(null=True, blank=True)
+    max_occurrences = models.PositiveIntegerField(null=True, blank=True, help_text="Zakończ po X wystąpieniach")
+
+    # Tryb generowania (to zostaje z naszej starej logiki)
+    # Fixed = generuj wg kalendarza (RRULE)
+    # Dynamic = generuj po wykonaniu (tu RRULE jest mniej przydatne, ale interwał się przyda)
+    is_dynamic = models.BooleanField(default=False, help_text="Czy generować po wykonaniu poprzedniego?")
 
     # Dla dynamicznego: opóźnienie po wykonaniu
     # Dla sztywnego: data startu / następnego wywołania
@@ -35,12 +54,40 @@ class RecurringPattern(models.Model):
     completed_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"Pattern: {self.title} (Co {self.interval_days} dni)"
+        return f"Pattern: {self.title} ({self.get_frequency_display()})"
 
     @property
     def completion_rate(self):
         if self.generated_count == 0: return 0
         return int((self.completed_count / self.generated_count) * 100)
+
+    def get_rrule_string(self):
+        """Generuje string zgodny z RFC 5545 na podstawie pól modelu."""
+        from dateutil.rrule import MO, TU, WE, TH, FR, SA, SU
+
+        # Mapowanie stringów na obiekty dateutil
+        day_map = {
+            'MO': MO, 'TU': TU, 'WE': WE, 'TH': TH, 'FR': FR, 'SA': SA, 'SU': SU
+        }
+
+        parts = [f"FREQ={self.frequency}"]
+        parts.append(f"INTERVAL={self.interval}")
+
+        if self.frequency == 'WEEKLY' and self.week_days:
+            # week_days to np. ['MO', 'TH']
+            days_str = ",".join(self.week_days)
+            parts.append(f"BYDAY={days_str}")
+
+        if self.max_occurrences:
+            # Musimy odjąć to co już wygenerowano?
+            # RRULE COUNT dotyczy całkowitej liczby w serii.
+            # Jeśli edytujemy pattern, to COUNT liczy się od startu reguły (dtstart).
+            parts.append(f"COUNT={self.max_occurrences}")
+
+        if self.end_date:
+            parts.append(f"UNTIL={self.end_date.strftime('%Y%m%dT%H%M%S')}")
+
+        return ";".join(parts)
 
 
 class Task(models.Model):
@@ -187,7 +234,9 @@ def check_recurrence_on_completion(sender, instance, **kwargs):
 
 
 class ChecklistItem(models.Model):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='checklist_items')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='checklist_items', null=True, blank=True)
+    recurring_pattern = models.ForeignKey(RecurringPattern, on_delete=models.CASCADE, related_name='template_items', null=True, blank=True)
+
     text = models.CharField(max_length=255)
     is_completed = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
@@ -197,6 +246,7 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return self.text
+
 
     @property
     def checklist_progress(self):

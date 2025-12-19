@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-body">
+            <h4 class="card-title mb-4">Ustawienia Powtarzalności: {{ task.title }}</h4>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label>Tytuł szablonu</label>
+                    {{ form.title }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Częstotliwość</label>
+                        {{ form.frequency }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Co ile? (Interwał)</label>
+                        {{ form.interval }}
+                    </div>
+                </div>
+
+                <!-- Sekcja Dni Tygodnia (Pokaż tylko dla Weekly) -->
+                <div id="weekly-options" class="mb-3 p-3 bg-light rounded border" style="display: none;">
+                    <label class="mb-2 fw-bold">W dni:</label>
+                    <div class="row">
+                        {% for checkbox in form.week_days %}
+                        <div class="col-6 col-md-4">
+                            {{ checkbox }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check form-switch">
+                    {{ form.is_dynamic }}
+                    <label class="form-check-label">Generuj dopiero po wykonaniu (Dynamic)</label>
+                </div>
+
+                <hr>
+                <h6 class="text-muted">Koniec cyklu (opcjonalne)</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>Data końcowa</label>
+                        {{ form.end_date }}
+                    </div>
+                    <div class="col-md-6">
+                        <label>Limit wystąpień</label>
+                        {{ form.max_occurrences }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{% url 'task_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary">Zapisz Regułę</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Prosty skrypt do pokazywania dni tygodnia
+    document.addEventListener('DOMContentLoaded', function() {
+        const freqSelect = document.getElementById('id_frequency');
+        const weeklyDiv = document.getElementById('weekly-options');
+
+        function toggleWeekly() {
+            if (freqSelect.value === 'WEEKLY') {
+                weeklyDiv.style.display = 'block';
+            } else {
+                weeklyDiv.style.display = 'none';
+            }
+        }
+
+        freqSelect.addEventListener('change', toggleWeekly);
+        toggleWeekly(); // Uruchom na start
+    });
+</script>
+{% endblock %}
