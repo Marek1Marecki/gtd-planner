@@ -2,14 +2,42 @@
 
 {% block content %}
 <div class="container-fluid">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="bi bi-calendar3-week"></i>
-            Plan Tygodnia: {{ start_date|date:"d.m" }} - {{ end_date|date:"d.m" }}
-        </h2>
+        <div class="d-flex align-items-center">
+            <!-- Poprzedni Tydzień -->
+            <a href="{% url 'calendar_weekly' %}{{ prev_week_params }}" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+
+            <h2>
+                <i class="bi bi-calendar3-week"></i>
+                Plan Tygodnia: {{ start_date|date:"d.m" }} - {{ end_date|date:"d.m" }}
+            </h2>
+
+            <!-- Następny Tydzień -->
+            <a href="{% url 'calendar_weekly' %}{{ next_week_params }}" class="btn btn-outline-secondary btn-sm ms-2">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
         <div class="btn-group">
-            <a href="{% url 'calendar_daily' %}" class="btn btn-outline-primary">Dzień</a>
+            <!-- Przełączniki widoków (uwzględnij HTMX) -->
+            <!-- Dzień (Przejdź do poniedziałku wyświetlanego tygodnia) -->
+            <a href="{% url 'calendar_daily' %}?year={{ start_date.year }}&month={{ start_date.month }}&day={{ start_date.day }}"
+               class="btn btn-outline-primary"
+               hx-get="{% url 'calendar_daily' %}?year={{ start_date.year }}&month={{ start_date.month }}&day={{ start_date.day }}"
+               hx-target="#main-view"
+               hx-push-url="true">Dzień</a>
+
+            <!-- Tydzień (Aktywny) -->
             <a href="#" class="btn btn-primary active">Tydzień</a>
+
+            <!-- Miesiąc (Przejdź do miesiąca z tego tygodnia) -->
+            <a href="{% url 'calendar_monthly' %}?year={{ start_date.year }}&month={{ start_date.month }}"
+               class="btn btn-outline-primary"
+               hx-get="{% url 'calendar_monthly' %}?year={{ start_date.year }}&month={{ start_date.month }}"
+               hx-target="#main-view"
+               hx-push-url="true">Miesiąc</a>
         </div>
     </div>
 

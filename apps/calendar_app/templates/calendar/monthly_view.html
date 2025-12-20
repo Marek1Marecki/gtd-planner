@@ -1,0 +1,66 @@
+{% extends base_template %}
+{% load core_extras %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ prev_date }}" class="btn btn-outline-secondary btn-sm me-2"><i class="bi bi-chevron-left"></i></a>
+            <h2 class="mb-0 text-capitalize">{{ current_date|date:"F Y" }}</h2>
+            <a href="{{ next_date }}" class="btn btn-outline-secondary btn-sm ms-2"><i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'calendar_daily' %}" class="btn btn-outline-primary">Dzień</a>
+            <a href="{% url 'calendar_weekly' %}" class="btn btn-outline-primary">Tydzień</a>
+            <a href="#" class="btn btn-primary active">Miesiąc</a>
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="mb-3 small">
+        <span class="badge bg-danger me-2">Cel</span>
+        <span class="badge bg-primary me-2">Projekt</span>
+        <span class="badge bg-info text-dark me-2">Kamień Milowy</span>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-bordered mb-0" style="table-layout: fixed;">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th style="width: 14%;">Pon</th>
+                        <th style="width: 14%;">Wt</th>
+                        <th style="width: 14%;">Śr</th>
+                        <th style="width: 14%;">Czw</th>
+                        <th style="width: 14%;">Pt</th>
+                        <th style="width: 14%;" class="text-danger">Sob</th>
+                        <th style="width: 14%;" class="text-danger">Ndz</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in calendar %}
+                    <tr>
+                        {% for day in week %}
+                        <td style="height: 120px; vertical-align: top; {% if day == 0 %}background-color: #f8f9fa;{% endif %}">
+                            {% if day != 0 %}
+                                <div class="fw-bold mb-2 {% if day == today.day and current_date.month == today.month %}text-primary{% endif %}">
+                                    {{ day }}
+                                </div>
+
+                                <!-- Wydarzenia -->
+                                {% for event in events_by_day|get_item:day %}
+                                    <div class="badge {{ event.color }} d-block text-truncate mb-1 text-start" title="{{ event.title }}">
+                                        {{ event.title }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
