@@ -233,12 +233,55 @@ class SchedulerService:
             scheduled_ids_p = {item.task.id for item in pers_sched}
             pool_personal = [t for t in pool_personal if t.id not in scheduled_ids_p]
 
+
+            # --- NOWE: Obliczanie obciążenia (Load Calculation) ---
+
+            # 1. Całkowity czas zajęty (minuty)
+            total_minutes = 0
+
+            # Zadania zaplanowane
+            for item in work_sched + pers_sched:
+                total_minutes += item.task.duration_expected
+
+            # Spotkania sztywne
+            for event in day_fixed:
+                dur = (event.end_time - event.start_time).total_seconds() / 60
+                total_minutes += int(dur)
+
+            # 2. Pojemność dnia (Capacity)
+            # Uproszczenie: Czas między Work Start a Personal End (cały aktywny dzień)
+            # Lub tylko Work Window, jeśli interesuje nas praca.
+            # Policzmy cały dostępny czas (Work + Personal)
+            work_cap = (profile.work_end_hour.hour * 60 + profile.work_end_hour.minute) - \
+                       (profile.work_start_hour.hour * 60 + profile.work_start_hour.minute)
+
+            pers_cap = (profile.personal_end_hour.hour * 60 + profile.personal_end_hour.minute) - \
+                       (profile.personal_start_hour.hour * 60 + profile.personal_start_hour.minute)
+
+            total_capacity = max(1, work_cap + pers_cap)  # Unikaj dzielenia przez 0
+
+            load_percent = int((total_minutes / total_capacity) * 100)
+
+            # 3. Suma Energii (Heatmap)
+            total_energy = sum(item.task.energy_required for item in work_sched + pers_sched)
+            # Heurystyka: Jeśli suma energii > 15 (np. 5 zadań trudnych), to dzień ciężki
+            intensity = 'low'
+            if total_energy > 15:
+                intensity = 'high'
+            elif total_energy > 8:
+                intensity = 'medium'
+
+
             # Zapisz wynik dnia
             week_plan.append({
                 'date': day,
-                'day_name': day.strftime("%A"),  # np. Monday
-                'items': work_sched + pers_sched + day_fixed  # Tylko do wyświetlania
-                # Uwaga: day_fixed ma inną strukturę niż ScheduledItem, trzeba uważać w szablonie
+                'day_name': day.strftime("%A"),
+                'items': work_sched + pers_sched + day_fixed,
+                # Nowe dane do widoku:
+                'load_percent': load_percent,
+                'total_minutes': total_minutes,
+                'capacity_minutes': total_capacity,
+                'intensity': intensity
             })
 
         return week_plan

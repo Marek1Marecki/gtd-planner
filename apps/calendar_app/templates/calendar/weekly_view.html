@@ -41,14 +41,63 @@
         </div>
     </div>
 
+    <!-- Pasek Strategiczny -->
+    {% if strategic_items %}
+    <div class="card mb-3 border-0 bg-light">
+        <div class="card-body p-2 d-flex align-items-center overflow-auto">
+            <span class="fw-bold text-muted me-3 text-uppercase small" style="white-space: nowrap;">
+                <i class="bi bi-flag-fill"></i> Kluczowe terminy:
+            </span>
+
+            {% for item in strategic_items %}
+            <div class="badge bg-white text-dark border me-2 p-2 shadow-sm d-flex align-items-center">
+                <i class="bi {{ item.icon }} {{ item.color }} fs-5 me-2"></i>
+
+                <div class="text-start">
+                    <div class="fw-bold">{{ item.obj.title }}</div>
+                    <div class="small text-muted" style="font-size: 0.7em;">
+                        <!-- Obsługa różnych pól daty (deadline vs due_date) -->
+                        {% if item.type == 'Projekt' %}
+                            {{ item.obj.deadline|date:"l" }} <!-- np. Piątek -->
+                        {% elif item.type == 'Milestone' %}
+                            {{ item.obj.due_date|date:"l" }}
+                        {% else %}
+                            {{ item.obj.deadline|date:"l" }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
     <div class="row flex-nowrap overflow-auto pb-4">
         {% for day in week_plan %}
         <div class="col" style="min-width: 200px; max-width: 250px;">
             <!-- Nagłówek Dnia -->
             <div class="card mb-2 {% if day.date == today %}border-primary bg-light{% endif %}">
                 <div class="card-body p-2 text-center">
-                    <h6 class="fw-bold mb-0">{{ day.day_name }}</h6>
+                    <h6 class="fw-bold mb-0">
+                        {{ day.day_name }}
+                        {% if day.intensity == 'high' %}🔥{% elif day.intensity == 'medium' %}⚡{% endif %}
+                    </h6>
                     <small class="text-muted">{{ day.date|date:"d.m" }}</small>
+
+                    <!-- Pasek Obciążenia -->
+                    <div class="progress mt-2" style="height: 6px;" title="Obciążenie: {{ day.load_percent }}%">
+                        <div class="progress-bar
+                            {% if day.load_percent > 100 %}bg-danger
+                            {% elif day.load_percent > 80 %}bg-warning
+                            {% else %}bg-success{% endif %}"
+                            role="progressbar"
+                            style="width: {{ day.load_percent }}%">
+                        </div>
+                    </div>
+                    <small class="d-block mt-1" style="font-size: 0.7em; color: #888;">
+                        {{ day.total_minutes }}m / {{ day.capacity_minutes }}m
+                    </small>
                 </div>
             </div>
 

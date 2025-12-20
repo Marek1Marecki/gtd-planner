@@ -200,6 +200,34 @@ def weekly_view(request):
     else:
         base_template = 'base.html'
 
+
+    # --- NOWE: Cele na ten tydzień ---
+
+    # 1. Cele (tak jak było)
+    goals = Goal.objects.filter(user=request.user, deadline__range=[start_of_week, end_of_week])
+
+    # 2. Projekty (Kończące się w tym tygodniu)
+    projects = Project.objects.filter(user=request.user, deadline__range=[start_of_week, end_of_week])
+
+    # 3. Kamienie Milowe (Zadania is_milestone w tym tygodniu)
+    milestones = Task.objects.filter(
+        user=request.user,
+        is_milestone=True,
+        due_date__range=[start_of_week, end_of_week]
+    )
+
+    # Pakujemy wszystko w jedną listę "Wydarzeń Strategicznych"
+    strategic_items = []
+
+    for g in goals:
+        strategic_items.append({'type': 'Cel', 'obj': g, 'icon': 'bi-trophy-fill', 'color': 'text-warning'})
+
+    for p in projects:
+        strategic_items.append({'type': 'Projekt', 'obj': p, 'icon': 'bi-folder-fill', 'color': 'text-primary'})
+
+    for m in milestones:
+        strategic_items.append({'type': 'Milestone', 'obj': m, 'icon': 'bi-gem', 'color': 'text-info'})
+
     return render(request, template_name, {
         'week_plan': week_plan,
         'start_date': start_of_week,
@@ -207,7 +235,8 @@ def weekly_view(request):
         'today': date.today(),  # Dodaj, żeby wyróżniać dzisiejszą kolumnę
         'prev_week_params': prev_week_params,
         'next_week_params': next_week_params,
-        'base_template': base_template
+        'base_template': base_template,
+        'strategic_items': strategic_items,
     })
 
 
