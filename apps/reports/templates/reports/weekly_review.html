@@ -91,20 +91,94 @@
         <!-- Delegated -->
         <div class="col-md-4">
             <div class="card h-100">
-                <div class="card-header bg-secondary text-white">Delegowane</div>
-                <!-- ... analogicznie ... -->
+                <div class="card-header bg-secondary text-white">Delegowane (Delegated)</div>
+                <div class="list-group list-group-flush">
+                    {% for task in delegated_tasks %}
+                    <div class="list-group-item">
+                        <strong>{{ task.title }}</strong><br>
+                        <small class="text-muted">Przegląd: {{ task.review_date|default:"Brak" }}</small>
+                        <div class="mt-2">
+                            <!-- Akcja: Przywróć do siebie -->
+                            <a href="{% url 'task_edit' task.id %}" class="btn btn-sm btn-outline-dark">Edytuj</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-muted">Brak delegowanych.</div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
         <!-- Postponed -->
         <div class="col-md-4">
             <div class="card h-100">
-                <div class="card-header bg-secondary text-white">Odłożone</div>
-                <!-- ... analogicznie ... -->
+                <div class="card-header bg-dark text-white">Odłożone (Postponed)</div>
+                <div class="list-group list-group-flush">
+                    {% for task in postponed_tasks %}
+                    <div class="list-group-item">
+                        <strong>{{ task.title }}</strong><br>
+                        <small class="text-muted">Wznowienie: {{ task.review_date|default:"?" }}</small>
+                        <div class="mt-2">
+                            <!-- Akcja: Aktywuj -->
+                            <form hx-post="{% url 'task_force_today' task.id %}" hx-swap="none" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success">Aktywuj</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-muted">Brak odłożonych.</div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
-    </div>
 
+        <!-- Projekty Wstrzymane -->
+        <div class="col-md-4">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-pause-circle"></i> Projekty Wstrzymane
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for proj in projects_on_hold %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'project_detail' proj.id %}" class="text-decoration-none text-dark">
+                            <strong>{{ proj.title }}</strong>
+                        </a>
+                        <!-- Tu przydałby się przycisk "Aktywuj", ale edycja projektu też OK -->
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-muted small">Brak wstrzymanych projektów.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Luźne Notatki (Brain Dump) -->
+        <div class="col-md-4">
+            <div class="card h-100 border-info">
+                <div class="card-header bg-info bg-opacity-25 text-dark fw-bold">
+                    <i class="bi bi-journal-text"></i> Notatki (Inbox)
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for note in loose_notes %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <a href="{% url 'note_detail' note.id %}" class="text-decoration-none text-dark fw-bold">
+                                {{ note.title }}
+                            </a>
+                            <small class="text-muted">{{ note.created_at|date:"d.m" }}</small>
+                        </div>
+                        <p class="mb-1 text-muted small text-truncate">{{ note.content }}</p>
+
+                        <!-- Akcja: Przekształć w Zadanie? (Może w przyszłości) -->
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-muted small">Inbox notatek pusty.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
     <!-- Łańcuchy Blokad -->
     {% if blocking_chains %}

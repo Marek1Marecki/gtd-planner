@@ -134,3 +134,13 @@ def track_recurring_completion(sender, instance, created, **kwargs):
             from django.db.models import F
             instance.recurring_pattern.completed_count = F('completed_count') + 1
             instance.recurring_pattern.save()
+
+
+@receiver(pre_save, sender=Task)
+def set_completed_at(sender, instance, **kwargs):
+    # Jeśli status zmienia się na DONE, a data jest pusta -> ustaw teraz
+    if instance.status == 'done' and not instance.completed_at:
+        instance.completed_at = timezone.now()
+    # Jeśli status zmienia się z DONE na coś innego (reopen) -> wyczyść
+    elif instance.status != 'done' and instance.completed_at:
+        instance.completed_at = None

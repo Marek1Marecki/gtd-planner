@@ -120,6 +120,7 @@ class Task(models.Model):
     duration_max = models.PositiveIntegerField(null=True, blank=True)
     due_date = models.DateTimeField(null=True, blank=True)
     is_fixed_time = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     # Priorytety
     priority = models.IntegerField(default=3)

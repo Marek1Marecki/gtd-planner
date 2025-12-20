@@ -13,6 +13,7 @@ from apps.tasks.models import RecurringPattern
 from .models import ReviewSession
 from django import forms
 from apps.areas.models import Area
+from apps.notes.models import Note
 
 
 # Prosty formularz (można w forms.py, ale tu szybciej dla MVP)
@@ -152,6 +153,21 @@ def weekly_review_view(request):
 
     context_data = service.get_context_distribution(request.user)
 
+    # 6. Projekty Wstrzymane (On Hold)
+    projects_on_hold = Project.objects.filter(user=user, status='on_hold')
+    delegated_tasks = Task.objects.filter(user=user, status='delegated')
+    postponed_tasks = Task.objects.filter(user=user, status='postponed')
+    waiting_tasks = Task.objects.filter(user=user, status='waiting')
+
+    # 6. Luźne Notatki (Inbox Notatek)
+    # Notatki bez projektu i bez zadania
+    loose_notes = Note.objects.filter(
+        user=user,
+        project__isnull=True,
+        task__isnull=True
+    ).order_by('-created_at')
+
+
     return render(request, 'reports/weekly_review.html', {
         'review_form': form,
         'last_review': last_review,
@@ -167,6 +183,12 @@ def weekly_review_view(request):
         'neglected_areas': neglected_areas,
         'context_data': context_data,
         'blocking_chains': blocking_chains,
+
+        'delegated_tasks': delegated_tasks,
+        'postponed_tasks': postponed_tasks,
+        'waiting_tasks': waiting_tasks,
+        'projects_on_hold': projects_on_hold,
+        'loose_notes': loose_notes,
 
     })
 

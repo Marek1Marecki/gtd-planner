@@ -27,7 +27,12 @@ class Project(models.Model):
     status = models.CharField(
         max_length=20,
         default='active',
-        choices=[('active', 'Active'), ('completed', 'Completed')]
+        choices=[
+            ('active', 'Aktywny'),
+            ('completed', 'Ukończony'),
+            ('on_hold', 'Wstrzymany'), # <-- NOWE
+            ('archived', 'Zarchiwizowany')
+        ]
     )
     deadline = models.DateField(null=True, blank=True)
 
