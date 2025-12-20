@@ -1,0 +1,53 @@
+{% extends base_template %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-calendar3-week"></i>
+            Plan Tygodnia: {{ start_date|date:"d.m" }} - {{ end_date|date:"d.m" }}
+        </h2>
+        <div class="btn-group">
+            <a href="{% url 'calendar_daily' %}" class="btn btn-outline-primary">Dzień</a>
+            <a href="#" class="btn btn-primary active">Tydzień</a>
+        </div>
+    </div>
+
+    <div class="row flex-nowrap overflow-auto pb-4">
+        {% for day in week_plan %}
+        <div class="col" style="min-width: 200px; max-width: 250px;">
+            <!-- Nagłówek Dnia -->
+            <div class="card mb-2 {% if day.date == today %}border-primary bg-light{% endif %}">
+                <div class="card-body p-2 text-center">
+                    <h6 class="fw-bold mb-0">{{ day.day_name }}</h6>
+                    <small class="text-muted">{{ day.date|date:"d.m" }}</small>
+                </div>
+            </div>
+
+            <!-- Lista Zadań -->
+            <div class="list-group">
+                {% for item in day.items %}
+                    <!-- Rozróżnienie Fixed vs Scheduled -->
+                    {% if item.task %}
+                        <!-- To jest ScheduledItem -->
+                        <div class="list-group-item p-2 border-start border-4 mb-1 shadow-sm"
+                             style="border-left-color: {{ item.task.area_color|default:'#0d6efd' }} !important;">
+                            <small class="fw-bold d-block text-truncate">{{ item.task.title }}</small>
+                            <span class="badge bg-light text-dark border">{{ item.start|date:"H:i" }}</span>
+                        </div>
+                    {% else %}
+                        <!-- To jest FixedEvent (Google) -->
+                        <div class="list-group-item p-2 bg-secondary bg-opacity-10 mb-1">
+                            <small class="fw-bold d-block text-truncate text-muted">🔒 {{ item.title }}</small>
+                            <small class="text-muted">{{ item.start_time|date:"H:i" }}</small>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <div class="text-center text-muted py-5 small">Wolne!</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

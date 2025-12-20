@@ -1,5 +1,5 @@
 # apps/calendar_app/domain/services.py
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, timedelta, timezone, time
 from typing import List
 from dataclasses import dataclass
 from apps.calendar_app.ports.calendar_provider import FixedEvent
@@ -177,3 +177,68 @@ class SchedulerService:
                     break
 
         return schedule
+
+    def get_weekly_plan(self, user, start_date: date):
+        """Generuje plan na 7 dni od start_date."""
+        from apps.calendar_app.adapters.google_calendar import GoogleCalendarAdapter
+        from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
+
+        week_plan = []
+        days = [start_date + timedelta(days=i) for i in range(7)]
+        end_date = days[-1]
+
+        # 1. Pobierz zadania (pula do rozdysponowania)
+        task_repo = DjangoTaskRepository()
+        all_tasks = task_repo.get_active_tasks()
+        # Ważne: Kopiujemy listę, bo scheduler będzie ją "zjadał" (usuwał zaplanowane)
+        # Ale tutaj chcemy symulację. Jeśli zadanie zaplanujemy w Poniedziałek,
+        # to we Wtorek już nie powinno być dostępne.
+        # Nasz `schedule_tasks` nie modyfikuje obiektów w bazie, więc musimy
+        # sami zarządzać pulą `remaining_tasks` między dniami.
+
+        pool_work = [t for t in all_tasks if not t.is_private]
+        pool_personal = [t for t in all_tasks if t.is_private]
+
+        # 2. Pobierz Fixed Events (Batch)
+        gcal = GoogleCalendarAdapter()
+        all_fixed = gcal.get_events_range(user.id, start_date, end_date)
+
+        # 3. Pętla po dniach
+        for day in days:
+            # Filtruj fixed events dla tego dnia
+            day_fixed = [e for e in all_fixed if e.start_time.date() == day]
+
+            # Profil (Godziny) - dla uproszczenia te same co w user profile,
+            # ale w weekendy mogłyby być inne (TODO).
+            try:
+                profile = user.profile
+            except:
+                continue
+
+            now = datetime.now(timezone.utc)  # Używane tylko do oceny "czy już po czasie"
+
+            # --- Work Timeline ---
+            work_wins = self.calculate_free_windows(day, day_fixed, profile.work_start_hour, profile.work_end_hour)
+            work_sched = self.schedule_tasks(pool_work, work_wins, now, profile)
+
+            # Usuń zaplanowane z puli (żeby nie planować ich znowu jutro)
+            scheduled_ids = {item.task.id for item in work_sched}
+            pool_work = [t for t in pool_work if t.id not in scheduled_ids]
+
+            # --- Personal Timeline ---
+            pers_wins = self.calculate_free_windows(day, day_fixed, profile.personal_start_hour,
+                                                    profile.personal_end_hour)
+            pers_sched = self.schedule_tasks(pool_personal, pers_wins, now, profile)
+
+            scheduled_ids_p = {item.task.id for item in pers_sched}
+            pool_personal = [t for t in pool_personal if t.id not in scheduled_ids_p]
+
+            # Zapisz wynik dnia
+            week_plan.append({
+                'date': day,
+                'day_name': day.strftime("%A"),  # np. Monday
+                'items': work_sched + pers_sched + day_fixed  # Tylko do wyświetlania
+                # Uwaga: day_fixed ma inną strukturę niż ScheduledItem, trzeba uważać w szablonie
+            })
+
+        return week_plan

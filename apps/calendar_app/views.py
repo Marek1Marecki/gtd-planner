@@ -1,4 +1,5 @@
-from datetime import date, datetime, timezone
+# apps/calendar_app/views.py
+from datetime import date, datetime, timezone, timedelta
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
@@ -155,5 +156,33 @@ def daily_view(request):
         'backlog_tasks': backlog_tasks,
         'overdue_tasks': overdue_tasks,
         'today': today,
+        'base_template': base_template
+    })
+
+
+@login_required
+def weekly_view(request):
+    """Widok Tygodnia (Pon-Ndz)."""
+
+    # 1. Ustal poniedziałek bieżącego tygodnia
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())  # Monday
+
+    # 2. Uruchom logikę planowania
+    scheduler = SchedulerService()
+    week_plan = scheduler.get_weekly_plan(request.user, start_of_week)
+
+    # 3. Renderuj
+    # Jeśli HTMX, zwróć tylko tabelę
+    template_name = 'calendar/weekly_view.html'
+    if request.headers.get('HX-Request'):
+        base_template = 'base_htmx.html'
+    else:
+        base_template = 'base.html'
+
+    return render(request, template_name, {
+        'week_plan': week_plan,
+        'start_date': start_of_week,
+        'end_date': start_of_week + timedelta(days=6),
         'base_template': base_template
     })

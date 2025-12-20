@@ -3,4 +3,6 @@ from . import views
 
 urlpatterns = [
     path('', views.daily_view, name='calendar_daily'),
+    path('week/', views.weekly_view, name='calendar_weekly'),
+
 ]
