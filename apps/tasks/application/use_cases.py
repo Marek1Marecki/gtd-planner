@@ -18,6 +18,7 @@ class CreateTaskInput:
     area_id: Optional[int] = None
     is_milestone: bool = False
     goal_id: Optional[int] = None
+    status: str = 'inbox'
 
 class CreateTaskUseCase:
     def __init__(self, repository: ITaskRepository):
@@ -31,7 +32,7 @@ class CreateTaskUseCase:
             id=None,
             title=input_dto.title,
             description=input_dto.description,
-            status=TaskStatus.INBOX,
+            status=TaskStatus(input_dto.status),
             duration_min=input_dto.duration_min,
             duration_max=input_dto.duration_max,
             project_id=input_dto.project_id,

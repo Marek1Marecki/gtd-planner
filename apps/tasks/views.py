@@ -46,6 +46,11 @@ def task_create_view(request):
         area_id = request.POST.get('area_id')
         is_milestone = request.POST.get('is_milestone') == 'on'
         goal_id = request.POST.get('goal_id')
+        status = request.POST.get('status')
+
+        # Walidacja (opcjonalna, ale dobra praktyka)
+        if not status:
+            status = 'inbox' # Domyślnie
 
         # Konwersja project_id (pusty string -> None)
         project_id_int = int(project_id) if project_id else None
@@ -66,7 +71,8 @@ def task_create_view(request):
             context_id=ctx_id_val,
             area_id=int(area_id) if area_id else None,
             is_milestone=is_milestone,
-            goal_id=int(goal_id) if goal_id else None
+            goal_id=int(goal_id) if goal_id else None,
+            status=status if status else 'inbox',
         )
 
         # 2. Złożenie Use Case (Manual Dependency Injection)
@@ -175,13 +181,15 @@ def task_edit_view(request, pk):
         area_id = request.POST.get('area_id')
         is_milestone = request.POST.get('is_milestone') == 'on'
         goal_id = request.POST.get('goal_id')
+        status = request.POST.get('status')
+        blocker_ids = request.POST.getlist('blocked_by') # Zwraca listę stringów ['1', '5']
 
         # 3. Zaktualizuj Encję (Tworzymy obiekt z ID, co wymusi UPDATE w repo)
         updated_task = TaskEntity(
             id=task_model.id,  # WAŻNE: Przekazujemy ID
             title=title,
             description=description,
-            status=TaskStatus(task_model.status),  # Zachowujemy stary status
+            status=TaskStatus(status),
             duration_min=int(d_min) if d_min else None,
             duration_max=int(d_max) if d_max else None,
             project_id=int(project_id) if project_id else None,
@@ -191,7 +199,8 @@ def task_edit_view(request, pk):
             percent_complete=task_model.percent_complete,
             area_id=int(area_id) if area_id else None,
             is_milestone=is_milestone,
-            goal_id=int(goal_id) if goal_id else None
+            goal_id=int(goal_id) if goal_id else None,
+            blocked_by=[int(i) for i in blocker_ids],  # Rzutuj na int
         )
 
         # 4. Zapisz (Repozytorium wykryje ID i zrobi UPDATE)
@@ -205,12 +214,17 @@ def task_edit_view(request, pk):
     areas = Area.objects.filter(user=request.user)
     goals = Goal.objects.filter(user=request.user)
 
+    # Pobierz kandydatów
+    potential_blockers = Task.objects.filter(user=request.user).exclude(status__in=['done', 'cancelled']).exclude(
+        id=task_model.id)
+
     return render(request, 'tasks/task_form.html', {
         'task': task_model,  # Przekazujemy obiekt do wstępnego wypełnienia
         'projects': projects,
         'contexts': contexts,
         'areas': areas,
         'goals': goals,
+        'potential_blockers': potential_blockers,
     })
 
 

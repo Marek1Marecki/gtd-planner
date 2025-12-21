@@ -34,6 +34,38 @@
                             </select>
                         </div>
 
+                        <!-- Status (Nowe Pole) -->
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <!-- Opcje manualne -->
+                                <option value="inbox" {% if task.status == 'inbox' %}selected{% endif %}>Inbox (Do wyjaśnienia)</option>
+                                <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>Todo (Do zrobienia)</option>
+                                <option value="waiting" {% if task.status == 'waiting' %}selected{% endif %}>Waiting (Oczekujące)</option>
+                                <option value="delegated" {% if task.status == 'delegated' %}selected{% endif %}>Delegated (Oddelegowane)</option>
+                                <option value="postponed" {% if task.status == 'postponed' %}selected{% endif %}>Postponed (Odłożone)</option>
+                                <option value="done" {% if task.status == 'done' %}selected{% endif %}>Done (Zrobione)</option>
+
+                                <!-- Opcje systemowe (pokazujemy tylko jeśli zadanie już ma taki status, żeby nie zgubić) -->
+                                {% if task.status == 'scheduled' %}<option value="scheduled" selected>Scheduled (Zaplanowane)</option>{% endif %}
+                                {% if task.status == 'blocked' %}<option value="blocked" selected>Blocked (Zablokowane)</option>{% endif %}
+                                {% if task.status == 'overdue' %}<option value="overdue" selected>Overdue (Przeterminowane)</option>{% endif %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Zablokowane przez (Blokery)</label>
+                            <select name="blocked_by" class="form-select" multiple size="5">
+                                {% for blocker in potential_blockers %}
+                                    <option value="{{ blocker.id }}"
+                                        {% if blocker in task.blocked_by.all %}selected{% endif %}>
+                                        {{ blocker.title }} ({{ blocker.get_status_display }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Przytrzymaj Ctrl, aby wybrać wiele.</div>
+                        </div>
+
                         <!-- ... Obszar ... -->
                         <div class="mb-3">
                             <label class="form-label">Obszar (Area)</label>

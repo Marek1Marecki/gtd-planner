@@ -1,7 +1,7 @@
 # apps/tasks/domain/entities.py
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 
 
@@ -54,6 +54,7 @@ class TaskEntity:
     project_deadline: Optional[datetime] = None
     ready_since: Optional[datetime] = None
     recurring_pattern_id: Optional[int] = None
+    blocked_by: List[int] = field(default_factory=list)
 
     created_at: Optional[datetime] = None
 

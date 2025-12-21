@@ -56,6 +56,7 @@ class DjangoTaskRepository(ITaskRepository):
             project_deadline=project_deadline,
             is_milestone=model.is_milestone,
             ready_since=model.ready_since,
+            blocked_by=list(model.blocked_by.values_list('id', flat=True)),
             created_at=model.created_at,
 
         )
@@ -100,6 +101,15 @@ class DjangoTaskRepository(ITaskRepository):
             if user_id is None:
                 raise ValueError("user_id is required for creating a new task")
             obj = TaskModel.objects.create(user_id=user_id, **data)
+
+        # --- NOWE: Zapisz relację M2M ---
+        if task.blocked_by is not None:
+            obj.blocked_by.set(task.blocked_by)
+
+            # Automatyka: Jeśli dodano blokery, zmień status na blocked
+            if task.blocked_by and obj.status != 'blocked':
+                obj.status = 'blocked'
+                obj.save()
 
         return self.to_entity(obj)
 
