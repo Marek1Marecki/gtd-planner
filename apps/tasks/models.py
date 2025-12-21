@@ -255,3 +255,11 @@ class ChecklistItem(models.Model):
         if total == 0: return 0
         done = self.checklist_items.filter(is_completed=True).count()
         return int((done / total) * 100)
+
+
+    @property
+    def duration_expected(self):
+        """Oblicza d_exp (średnia)."""
+        d_min = self.duration_min or 30
+        d_max = self.duration_max or d_min
+        return int((d_min + d_max) / 2)

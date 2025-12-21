@@ -189,3 +189,77 @@ class ReportService:
                 })
 
         return chains
+
+    def get_productivity_heatmap(self, user):
+        """
+        Generuje heatmapę godzinową (0-23) obciążenia pracą.
+        Uwzględnia duration i energy zadania (Back-filling).
+        """
+        from apps.reports.models import ActivityLog
+        from apps.tasks.models import Task
+
+        # Inicjalizacja wiaderek (0-23h)
+        # hourly_load[14] = suma punktów obciążenia o 14:00
+        hourly_load = [0] * 24
+
+        # Zakres: ostatnie 30 dni
+        month_ago = timezone.now() - timedelta(days=30)
+
+        # Pobierz logi ukończenia
+        # Optymalizacja: select_related nie zadziała dla GenericForeignKey w prosty sposób,
+        # więc pobieramy logi, a potem zadania w pętli (dla 30 dni to akceptowalne w MVP)
+        # LUB: Pobieramy zadania DONE z updated_at > 30 dni (szybciej)
+
+        tasks = Task.objects.filter(
+            user=user,
+            status='done',
+            # Używamy completed_at jeśli jest, lub updated_at
+            # Zakładamy, że completed_at zostało wdrożone w poprzedniej fazie
+        )
+
+        for task in tasks:
+            # Data ukończenia
+            end_time = task.completed_at or task.updated_at
+            if not end_time or end_time < month_ago:
+                continue
+
+            # Ustal duration (minuty)
+            duration = task.duration_expected
+            if not duration or duration < 5: duration = 30  # Default dla zadań bez czasu
+
+            # Ustal energię (mnożnik)
+            # Energy: 1 (Low), 2 (Mid), 3 (High)
+            energy_mult = task.energy_required or 1
+
+            # Algorytm Back-filling
+            # Symulujemy pracę wstecz od end_time
+            current_time = end_time
+            minutes_left = duration
+
+            while minutes_left > 0:
+                # Która to godzina? (0-23)
+                hour_idx = current_time.hour
+
+                # Ile minut w tej godzinie zajęło zadanie?
+                # Np. jest 14:15. Do początku godziny (14:00) jest 15 min.
+                minutes_in_hour = current_time.minute
+
+                # Jeśli zadanie trwało krócej niż to co upłynęło w godzinie
+                step = min(minutes_left, minutes_in_hour)
+
+                # Jeśli step == 0 (np. jest 14:00:00), cofamy się do poprzedniej godziny 13:59
+                if step == 0:
+                    current_time -= timedelta(minutes=1)
+                    continue
+
+                # Dodaj punkty do wiaderka
+                # Punkty = Minuty * Energia
+                hourly_load[hour_idx] += step * energy_mult
+
+                # Odejmij czas
+                minutes_left -= step
+                current_time -= timedelta(minutes=step)
+
+        # Normalizacja wyników (opcjonalnie, żeby wykres był czytelny)
+        # Zwracamy surowe punkty, Chart.js sobie poradzi
+        return hourly_load

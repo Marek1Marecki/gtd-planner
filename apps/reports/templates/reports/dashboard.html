@@ -61,6 +61,20 @@
         </div>
     </div>
 
+    <!-- Wykres Heatmapa Dnia -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-brightness-high"></i> Twój Dobowy Rytm Energii (Kiedy pracujesz?)
+                </div>
+                <div class="card-body">
+                    <canvas id="heatmapChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Nowy rząd dla Kontekstów -->
     <div class="row mt-4">
         <div class="col-md-6">
@@ -223,6 +237,35 @@
                             </div>
                         </div>
                     </li>`;
+
+                if (data.heatmap) {
+                    const heatCtx = document.getElementById('heatmapChart').getContext('2d');
+                    // Generuj etykiety godzin 00-23
+                    const hours = Array.from({length: 24}, (_, i) => i + ":00");
+
+                    new Chart(heatCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: hours,
+                            datasets: [{
+                                label: 'Intensywność Pracy (Minuty × Energia)',
+                                data: data.heatmap,
+                                backgroundColor: 'rgba(255, 193, 7, 0.6)', // Kolor żółty/złoty
+                                borderColor: 'rgba(255, 193, 7, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: { beginAtZero: true, title: {display: true, text: 'Punkty Obciążenia'} },
+                                x: { title: {display: true, text: 'Godzina Dnia'} }
+                            }
+                        }
+                    });
+                }
+
 
             })
             .catch(error => console.error('Błąd pobierania statystyk:', error));
