@@ -1,27 +1,27 @@
 # Core
-Django==5.2.8
-django-environ==0.12.0
-psycopg2-binary==2.9.11  # PostgreSQL adapter
-django-filter==25.2  # For filtering querysets
-django-widget-tweaks==1.5.0  # For form rendering
+Django>=6.0
+django-environ>=0.12.0
+psycopg2-binary>=2.9.11  # PostgreSQL adapter
+django-filter>=25.2  # For filtering querysets
+django-widget-tweaks>=1.5.0  # For form rendering
 
 # Google API Integration
-google-api-python-client==2.187.0
-google-auth==2.41.1
-google-auth-oauthlib==1.2.3
-google-auth-httplib2==0.2.1
+google-api-python-client>=2.187.0
+google-auth>=1.32.0,<3.0.0
+google-auth-oauthlib>=1.2.3
+google-auth-httplib2>=0.3.0
 
 # Celery (for async tasks)
-celery==5.5.3
-redis==7.1.0  # Celery broker
+celery>=5.6.0
+redis>=7.1.0  # Celery broker
 
 # Date/Time
-pytz==2025.2
-python-dateutil==2.9.0.post0
+pytz>=2025.2
+python-dateutil>=2.9.0
 
 # Utilities
-Pillow==12.0.0  # Image processing
-requests==2.32.5
+Pillow>=12.0.0  # Image processing
+requests>=2.32.5
 
 # Development
 # pytest==8.2.2
