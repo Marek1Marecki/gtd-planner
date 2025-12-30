@@ -26,4 +26,10 @@ ENV/
 .DS_Store
 Thumbs.db
 
-/client_secret.json
+# --- Security ---
+client_secret.json
+*_secret.json
+credentials.json
+
+# --- Windows artifacts ---
+*:Zone.Identifier

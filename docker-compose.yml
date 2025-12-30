@@ -1,0 +1,53 @@
+
+services:
+  # Baza danych dla GTD (zwykły Postgres, chyba że używasz GIS?)
+  # Jeśli nie używasz map w tym projekcie, wystarczy obraz 'postgres:15'.
+  # Jeśli używasz map, zostaw 'postgis/postgis'.
+  gtd-db:
+    image: postgres:17-alpine
+    networks:
+      - dev-net 
+    container_name: gtd_planner_db
+    volumes:
+      - gtd_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=gtd_db
+      - POSTGRES_USER=gtd_user
+      - POSTGRES_PASSWORD=gtd_pass
+    ports:
+      - "5433:5432" # Port zewnętrzny 5433 (żeby nie gryzł się z Odznakami na 5432)
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U gtd_user -d gtd_db"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+
+  gtd-web:
+    build: ./web
+    container_name: gtd_planner_web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./web:/app
+    ports:
+      - "8001:8000" # Aplikacja dostępna pod localhost:8001
+    environment:
+      - DATABASE=postgres
+      - POSTGRES_HOST=gtd-db
+      - POSTGRES_PORT=5432 # Wewnętrzny port to zawsze 5432
+      - POSTGRES_DB=gtd_db
+      - POSTGRES_USER=gtd_user
+      - POSTGRES_PASSWORD=gtd_pass
+      - SECRET_KEY=gtd_secret_key
+      - DEBUG=1
+    env_file:
+      - ./web/.env
+    depends_on:
+      gtd-db:
+        condition: service_healthy
+
+volumes:
+  gtd_postgres_data:
+
+networks:
+  dev-net:
+    external: true
