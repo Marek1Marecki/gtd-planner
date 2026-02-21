@@ -2,34 +2,74 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 
 # Django
 *.log
 local_settings.py
 db.sqlite3
+db.sqlite3-journal
 media/
+staticfiles/
+static_collected/
 
-# Środowisko wirtualne (zakładam, że nazywa się .venv lub venv)
+# Virtual environments
 .venv/
 venv/
 ENV/
+env/
 
-# PyCharm / IDE
+# uv
+.uv-cache/
+
+# IDE
 .idea/
 .vscode/
 /.qodo/
+*.swp
+*.swo
+*~
 
-# Zmienne środowiskowe (Bardzo ważne!)
+# Environment & Secrets
 .env
+.env.*
+!.env.example
 
-# Systemowe
-.DS_Store
-Thumbs.db
-
-# --- Security ---
+# Security — Google credentials
 client_secret.json
 *_secret.json
 credentials.json
+token.json
+*_credentials.json
 
-# --- Windows artifacts ---
+# OS
+.DS_Store
+Thumbs.db
 *:Zone.Identifier
+
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.hypothesis/
+coverage.xml
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# uv lockfile — NIE ignoruj, musi być w repo
+# uv.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+dump.rdb

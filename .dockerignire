@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+# migrations/ # Zazwyczaj chcemy migracje w obrazie, chyba że zarządzasz nimi inaczej
+
+# Środowisko i sekrety (nie chcemy ich wewnątrz obrazu, montujemy je przez Docker Compose)
+.env
+.env.local
+client_secret.json
+
+# Narzędzia (uv, ruff, mypy, pytest)
+.uv
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE i systemowe
+.vscode/
+.idea/
+.qodo/
+.DS_Store
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore

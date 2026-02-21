@@ -2,9 +2,11 @@
 from django.contrib import admin
 from django.urls import path, include
 from apps.core import views as core_views
+from django.http import HttpResponse
 
 
 urlpatterns = [
+    path('health/', lambda r: HttpResponse("OK")),
     path('admin/', admin.site.urls),
     path('', core_views.dashboard_view, name='home'), # Pusta ścieżka = Home
     path('accounts/', include('django.contrib.auth.urls')),

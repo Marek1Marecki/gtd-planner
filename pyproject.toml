@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["web"]
+
+[project]
+name = "gtd-planner"
+version = "0.1.0"
+description = "GTD Planner - aplikacja do zarządzania zadaniami w architekturze heksagonalnej"
+requires-python = ">=3.14"
+dependencies = [
+    # Core Django
+    "Django>=6.0",
+    "django-environ>=0.12.0",
+    "django-filter>=25.0",
+    "django-widget-tweaks>=1.5.0",
+
+    # Database
+    "psycopg2-binary>=2.9.11",
+
+    # Google API Integration
+    "google-api-python-client>=2.100.0",
+    "google-auth>=2.0.0,<3.0.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.3.0",
+
+    # Async tasks
+    "celery>=5.3.0",
+    "redis>=5.0.0",
+
+    # Date/Time
+    "pytz>=2024.1",
+    "python-dateutil>=2.9.0",
+
+    # Utilities
+    "Pillow>=10.0.0",
+    "requests>=2.31.0",
+
+    # Web server
+    "gunicorn>=22.0.0",
+    "whitenoise>=6.6.0",
+
+    # Environment
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-django>=4.7.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.5.0",
+    "mypy>=1.8.0",
+    "django-stubs>=5.0.0",
+    "pre-commit>=3.6.0",
+    "ipython>=8.20.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "C4"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+warn_return_any = false
+disallow_untyped_defs = false
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "gtd_calendar.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "gtd_calendar.settings"
+testpaths = ["web"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--verbose",
+]
+
+[tool.coverage.run]
+source = ["web"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/.venv/*",
+    "web/manage.py",
+]
