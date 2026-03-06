@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Quality Check
         run: |
-          # Tworzymy kompletny plik .env dla CI
+          # Tworzymy KOMPLETNY plik .env (identyczny w strukturze z .env.example)
           cat <<EOF > .env
           SECRET_KEY=ci-dummy-secret-key-12345
           DEBUG=0
@@ -53,10 +53,13 @@ jobs:
           POSTGRES_PASSWORD=gtd_password
           POSTGRES_HOST=localhost
           POSTGRES_PORT=5432
+          GOOGLE_CLIENT_ID=dummy-google-id
+          GOOGLE_CLIENT_SECRET=dummy-google-secret
+          CELERY_BROKER_URL=redis://localhost:6379/0
           EOF
           
           export PYTHONPATH=web
-          # Dodatkowe exporty dla pewności narzędzi
+          # Przekazujemy kluczowe zmienne do shella dla pewności
           export SECRET_KEY=ci-dummy-secret-key-12345
           export DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
           
