@@ -1,8 +1,8 @@
 # apps/reports/models.py
-from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 
 
 class ActivityLog(models.Model):
@@ -11,18 +11,18 @@ class ActivityLog(models.Model):
 
     # Co zrobił? (Typ akcji)
     class ActionType(models.TextChoices):
-        CREATED = 'created', 'Utworzono'
-        UPDATED = 'updated', 'Zaktualizowano'
-        STATUS_CHANGE = 'status_change', 'Zmiana Statusu'
-        COMPLETED = 'completed', 'Ukończono'
-        DELETED = 'deleted', 'Usunięto'
+        CREATED = "created", "Utworzono"
+        UPDATED = "updated", "Zaktualizowano"
+        STATUS_CHANGE = "status_change", "Zmiana Statusu"
+        COMPLETED = "completed", "Ukończono"
+        DELETED = "deleted", "Usunięto"
 
     action_type = models.CharField(max_length=20, choices=ActionType.choices)
 
     # Na czym? (Generic Relation)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     # Szczegóły (np. "Zmiana z TODO na DONE")
     description = models.TextField(blank=True)
@@ -33,12 +33,12 @@ class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-timestamp']
+        ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=["content_type", "object_id"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user} - {self.action_type} - {self.timestamp}"
 
 
@@ -50,5 +50,8 @@ class ReviewSession(models.Model):
     reflection = models.TextField(blank=True, verbose_name="Refleksja (Co poszło dobrze/źle?)")
     next_week_priorities = models.TextField(blank=True, verbose_name="Priorytety na kolejny tydzień")
 
-    def __str__(self):
+    class Meta:
+        ordering = ["-date"]  # Newest first
+
+    def __str__(self) -> str:
         return f"Review {self.date.strftime('%Y-%m-%d')}"

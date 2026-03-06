@@ -1,9 +1,11 @@
 # apps/calendar_app/domain/services.py
-from datetime import date, datetime, timedelta, timezone, time
-from typing import List
 from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta
+from typing import Any, List, Sequence
+
 from apps.calendar_app.ports.calendar_provider import FixedEvent
-from apps.tasks.domain.entities import TaskEntity, TaskStatus
+from apps.core.models import UserProfile
+from apps.tasks.domain.entities import TaskEntity
 from apps.tasks.domain.services import TaskScorer
 
 
@@ -28,31 +30,33 @@ class FreeWindow:
 class SchedulerService:
     def calculate_free_windows(
         self,
-        day_date: datetime.date,
-        fixed_events: List[FixedEvent],
-        work_start: time, # Zmieniamy na wymagane argumenty
-        work_end: time
+        day_date: date,
+        fixed_events: Sequence[FixedEvent],
+        work_start: time,  # Zmieniamy na wymagane argumenty
+        work_end: time,
     ) -> List[FreeWindow]:
         """Dzieli dzień na wolne okna, omijając fixed_events."""
 
         # 1. Sortuj eventy chronologicznie
-        fixed_events.sort(key=lambda e: e.start_time)
+        fixed_events_list = list(fixed_events)
+        fixed_events_list.sort(key=lambda e: e.start_time)
 
         # 2. Ustal ramy dnia (z uwzględnieniem strefy czasowej eventów)
         # Dla uproszczenia zakładamy UTC, w produkcji tz z usera
         import pytz
+
         tz = pytz.UTC
 
         # Pobierz godziny z profilu
-        #work_start = user_profile.work_start_hour
-        #work_end = user_profile.work_end_hour
+        # work_start = user_profile.work_start_hour
+        # work_end = user_profile.work_end_hour
 
         current_time = datetime.combine(day_date, work_start).replace(tzinfo=tz)
         end_of_day = datetime.combine(day_date, work_end).replace(tzinfo=tz)
 
         windows = []
 
-        for event in fixed_events:
+        for event in fixed_events_list:
             # Jeśli event jest poza naszym oknem pracy, ignorujemy (uproszczenie)
             if event.end_time <= current_time:
                 continue
@@ -61,22 +65,20 @@ class SchedulerService:
 
             # Jeśli jest luka przed eventem
             if event.start_time > current_time:
-                windows.append(FreeWindow(
-                    start=current_time,
-                    end=event.start_time,
-                    is_work=True  # Na razie tylko work
-                ))
+                windows.append(
+                    FreeWindow(
+                        start=current_time,
+                        end=event.start_time,
+                        is_work=True,  # Na razie tylko work
+                    )
+                )
 
             # Przesuwamy kursor za event
             current_time = max(current_time, event.end_time)
 
         # Ostatnie okno po wszystkich eventach
         if current_time < end_of_day:
-            windows.append(FreeWindow(
-                start=current_time,
-                end=end_of_day,
-                is_work=True
-            ))
+            windows.append(FreeWindow(start=current_time, end=end_of_day, is_work=True))
 
         return windows
 
@@ -85,7 +87,7 @@ class SchedulerService:
         tasks: List[TaskEntity],
         windows: List[FreeWindow],
         now: datetime,
-        user_profile  # Obiekt UserProfile
+        user_profile: Any,  # Obiekt UserProfile
     ) -> List[ScheduledItem]:
         """
         Inteligentny algorytm alokacji (Bin Packing) z pełnym scoringiem.
@@ -122,7 +124,6 @@ class SchedulerService:
 
             # Pętla Alokacji w Oknie
             while remaining_tasks and (window.end - current_time).total_seconds() > 0:
-
                 # Oblicz czas do końca dnia (EOD Factor)
                 time_to_end = absolute_end_time - current_time
                 hours_to_end = time_to_end.total_seconds() / 3600
@@ -136,7 +137,7 @@ class SchedulerService:
                         slot_energy_level=slot_energy,
                         last_project_id=last_project_id,
                         sequence_count=sequence_count,
-                        hours_to_end_of_day=hours_to_end  # <-- EOD Factor
+                        hours_to_end_of_day=hours_to_end,  # <-- EOD Factor
                     )
                     scored_candidates.append((task, score))
 
@@ -147,7 +148,7 @@ class SchedulerService:
                 best_candidate = None
                 window_remaining_minutes = (window.end - current_time).total_seconds() / 60
 
-                for task, score in scored_candidates:
+                for task, _score in scored_candidates:
                     if task.duration_expected <= window_remaining_minutes:
                         best_candidate = task
                         break
@@ -156,11 +157,7 @@ class SchedulerService:
                     # Planujemy
                     end_time = current_time + timedelta(minutes=best_candidate.duration_expected)
 
-                    schedule.append(ScheduledItem(
-                        task=best_candidate,
-                        start=current_time,
-                        end=end_time
-                    ))
+                    schedule.append(ScheduledItem(task=best_candidate, start=current_time, end=end_time))
 
                     current_time = end_time
                     remaining_tasks.remove(best_candidate)
@@ -178,7 +175,7 @@ class SchedulerService:
 
         return schedule
 
-    def get_weekly_plan(self, user, start_date: date):
+    def get_weekly_plan(self, user: Any, start_date: date, now: datetime) -> List[Any]:
         """Generuje plan na 7 dni od start_date."""
         from apps.calendar_app.adapters.google_calendar import GoogleCalendarAdapter
         from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
@@ -212,13 +209,14 @@ class SchedulerService:
             # ale w weekendy mogłyby być inne (TODO).
             try:
                 profile = user.profile
-            except:
+            except UserProfile.DoesNotExist, AttributeError:
                 continue
 
-            now = datetime.now(timezone.utc)  # Używane tylko do oceny "czy już po czasie"
-
             # --- Work Timeline ---
-            work_wins = self.calculate_free_windows(day, day_fixed, profile.work_start_hour, profile.work_end_hour)
+            # Convert string hours to time objects
+            work_start_time = datetime.strptime(profile.work_start_hour, "%H:%M").time()
+            work_end_time = datetime.strptime(profile.work_end_hour, "%H:%M").time()
+            work_wins = self.calculate_free_windows(day, day_fixed, work_start_time, work_end_time)
             work_sched = self.schedule_tasks(pool_work, work_wins, now, profile)
 
             # Usuń zaplanowane z puli (żeby nie planować ich znowu jutro)
@@ -226,13 +224,14 @@ class SchedulerService:
             pool_work = [t for t in pool_work if t.id not in scheduled_ids]
 
             # --- Personal Timeline ---
-            pers_wins = self.calculate_free_windows(day, day_fixed, profile.personal_start_hour,
-                                                    profile.personal_end_hour)
+            # Convert string hours to time objects
+            personal_start_time = datetime.strptime(profile.personal_start_hour, "%H:%M").time()
+            personal_end_time = datetime.strptime(profile.personal_end_hour, "%H:%M").time()
+            pers_wins = self.calculate_free_windows(day, day_fixed, personal_start_time, personal_end_time)
             pers_sched = self.schedule_tasks(pool_personal, pers_wins, now, profile)
 
             scheduled_ids_p = {item.task.id for item in pers_sched}
             pool_personal = [t for t in pool_personal if t.id not in scheduled_ids_p]
-
 
             # --- NOWE: Obliczanie obciążenia (Load Calculation) ---
 
@@ -252,11 +251,17 @@ class SchedulerService:
             # Uproszczenie: Czas między Work Start a Personal End (cały aktywny dzień)
             # Lub tylko Work Window, jeśli interesuje nas praca.
             # Policzmy cały dostępny czas (Work + Personal)
-            work_cap = (profile.work_end_hour.hour * 60 + profile.work_end_hour.minute) - \
-                       (profile.work_start_hour.hour * 60 + profile.work_start_hour.minute)
+            work_start_time = datetime.strptime(profile.work_start_hour, "%H:%M").time()
+            work_end_time = datetime.strptime(profile.work_end_hour, "%H:%M").time()
+            personal_start_time = datetime.strptime(profile.personal_start_hour, "%H:%M").time()
+            personal_end_time = datetime.strptime(profile.personal_end_hour, "%H:%M").time()
 
-            pers_cap = (profile.personal_end_hour.hour * 60 + profile.personal_end_hour.minute) - \
-                       (profile.personal_start_hour.hour * 60 + profile.personal_start_hour.minute)
+            work_cap = (work_end_time.hour * 60 + work_end_time.minute) - (
+                work_start_time.hour * 60 + work_start_time.minute
+            )
+            pers_cap = (personal_end_time.hour * 60 + personal_end_time.minute) - (
+                personal_start_time.hour * 60 + personal_start_time.minute
+            )
 
             total_capacity = max(1, work_cap + pers_cap)  # Unikaj dzielenia przez 0
 
@@ -265,23 +270,24 @@ class SchedulerService:
             # 3. Suma Energii (Heatmap)
             total_energy = sum(item.task.energy_required for item in work_sched + pers_sched)
             # Heurystyka: Jeśli suma energii > 15 (np. 5 zadań trudnych), to dzień ciężki
-            intensity = 'low'
+            intensity = "low"
             if total_energy > 15:
-                intensity = 'high'
+                intensity = "high"
             elif total_energy > 8:
-                intensity = 'medium'
-
+                intensity = "medium"
 
             # Zapisz wynik dnia
-            week_plan.append({
-                'date': day,
-                'day_name': day.strftime("%A"),
-                'items': work_sched + pers_sched + day_fixed,
-                # Nowe dane do widoku:
-                'load_percent': load_percent,
-                'total_minutes': total_minutes,
-                'capacity_minutes': total_capacity,
-                'intensity': intensity
-            })
+            week_plan.append(
+                {
+                    "date": day,
+                    "day_name": day.strftime("%A"),
+                    "items": work_sched + pers_sched + day_fixed,
+                    # Nowe dane do widoku:
+                    "load_percent": load_percent,
+                    "total_minutes": total_minutes,
+                    "capacity_minutes": total_capacity,
+                    "intensity": intensity,
+                }
+            )
 
         return week_plan

@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contexts", "0001_initial"),
         ("tasks", "0006_task_review_date"),
@@ -26,8 +25,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="task",
             name="tags",
-            field=models.ManyToManyField(
-                blank=True, related_name="tasks", to="contexts.tag"
-            ),
+            field=models.ManyToManyField(blank=True, related_name="tasks", to="contexts.tag"),
         ),
     ]

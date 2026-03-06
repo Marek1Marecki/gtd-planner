@@ -1,9 +1,10 @@
 from datetime import date, timedelta
+
 from .models import Habit, HabitLog
 
 
 class HabitService:
-    def complete_habit(self, habit: Habit, day: date):
+    def complete_habit(self, habit: Habit, day: date) -> None:
         # 1. Sprawdź czy już nie zrobione dzisiaj
         if HabitLog.objects.filter(habit=habit, date=day).exists():
             return  # Już zrobione

@@ -1,8 +1,10 @@
 # apps/tasks/adapters/orm_repositories.py
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
-from apps.tasks.ports.repositories import ITaskRepository
 from apps.tasks.models import Task as TaskModel
+from apps.tasks.ports.repositories import ITaskRepository
+
 
 class DjangoTaskRepository(ITaskRepository):
     def to_entity(self, model: TaskModel) -> TaskEntity:
@@ -12,7 +14,9 @@ class DjangoTaskRepository(ITaskRepository):
         goal_deadline = None
         if model.project and model.project.goal and model.project.goal.deadline:
             from datetime import datetime, time
+
             import pytz
+
             # Konwersja date -> datetime (koniec dnia)
             # Używamy UTC lub strefy z settings, dla uproszczenia tutaj naive lub UTC
             d = model.project.goal.deadline
@@ -22,7 +26,9 @@ class DjangoTaskRepository(ITaskRepository):
         project_deadline = None
         if model.project and model.project.deadline:
             from datetime import datetime, time
+
             import pytz
+
             # Konwersja date -> datetime (koniec dnia)
             d = model.project.deadline
             project_deadline = datetime.combine(d, time.max).replace(tzinfo=pytz.UTC)
@@ -32,6 +38,7 @@ class DjangoTaskRepository(ITaskRepository):
             title=model.title,
             description=model.description,
             status=TaskStatus(model.status),
+            user_id=model.user_id,
             duration_min=model.duration_min,
             duration_max=model.duration_max,
             due_date=model.due_date,
@@ -42,23 +49,20 @@ class DjangoTaskRepository(ITaskRepository):
             is_private=model.is_private,
             percent_complete=model.percent_complete,
             is_critical_path=model.is_critical_path,
-
             # Relacje (ID)
             project_id=model.project_id if model.project_id else None,
             context_id=model.context_id if model.context_id else None,
             area_id=model.area_id if model.area_id else None,
             goal_id=model.goal_id if model.goal_id else None,
             recurring_pattern_id=model.recurring_pattern_id if model.recurring_pattern_id else None,
-
             # Pola "Enriched" (dane zaciągnięte z relacji dla UI/Algorytmu)
             area_color=model.area.color if model.area else None,
             goal_deadline=goal_deadline,
             project_deadline=project_deadline,
             is_milestone=model.is_milestone,
             ready_since=model.ready_since,
-            blocked_by=list(model.blocked_by.values_list('id', flat=True)),
+            blocked_by=list(model.blocked_by.values_list("id", flat=True)),
             created_at=model.created_at,
-
         )
 
     def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
@@ -68,28 +72,27 @@ class DjangoTaskRepository(ITaskRepository):
         except TaskModel.DoesNotExist:
             return None
 
-    def save(self, task: TaskEntity, user_id: int = None) -> TaskEntity:
+    def save(self, task: TaskEntity, user_id: int | None = None) -> TaskEntity:
         data = {
-            'title': task.title,
-            'description': task.description,
-            'status': task.status.value,
-            'duration_min': task.duration_min,
-            'duration_max': task.duration_max,
-            'due_date': task.due_date,
-            'is_fixed_time': task.is_fixed_time,
-            'priority': task.priority,
-            'energy_required': task.energy_required,
-            'complexity': task.complexity,
-            'is_private': task.is_private,
-            'percent_complete': task.percent_complete,
-            'is_critical_path': task.is_critical_path,
-            'project_id': task.project_id,
-            'context_id': task.context_id,
-            'area_id': task.area_id,
-            'is_milestone': task.is_milestone,
-            'goal_id': task.goal_id,
-            'ready_since': task.ready_since,
-
+            "title": task.title,
+            "description": task.description,
+            "status": task.status.value,
+            "duration_min": task.duration_min,
+            "duration_max": task.duration_max,
+            "due_date": task.due_date,
+            "is_fixed_time": task.is_fixed_time,
+            "priority": task.priority,
+            "energy_required": task.energy_required,
+            "complexity": task.complexity,
+            "is_private": task.is_private,
+            "percent_complete": task.percent_complete,
+            "is_critical_path": task.is_critical_path,
+            "project_id": task.project_id,
+            "context_id": task.context_id,
+            "area_id": task.area_id,
+            "is_milestone": task.is_milestone,
+            "goal_id": task.goal_id,
+            "ready_since": task.ready_since,
         }
 
         if task.id:
@@ -107,8 +110,8 @@ class DjangoTaskRepository(ITaskRepository):
             obj.blocked_by.set(task.blocked_by)
 
             # Automatyka: Jeśli dodano blokery, zmień status na blocked
-            if task.blocked_by and obj.status != 'blocked':
-                obj.status = 'blocked'
+            if task.blocked_by and obj.status != "blocked":
+                obj.status = "blocked"
                 obj.save()
 
         return self.to_entity(obj)
@@ -120,9 +123,9 @@ class DjangoTaskRepository(ITaskRepository):
     def get_active_tasks(self) -> List[TaskEntity]:
         # Active = To Do lub Scheduled
         # Dodajemy select_related('area'), żeby Django pobrało dane obszaru w jednym zapytaniu JOIN
-        qs = TaskModel.objects.filter(
-            status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value]
-        ).select_related('area', 'project__goal')
+        qs = TaskModel.objects.filter(status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value]).select_related(
+            "area", "project__goal"
+        )
 
         return [self.to_entity(t) for t in qs]
 
@@ -131,21 +134,19 @@ class DjangoTaskRepository(ITaskRepository):
         qs = TaskModel.objects.filter(blocked_by__id=blocker_id)
         return [self.to_entity(t) for t in qs]
 
-    def has_active_blockers(self, task_id: int) -> bool:
+    def has_active_blockers(self, task_id: int | None) -> bool:
         """
         Sprawdza, czy zadanie o podanym ID ma aktywne blokery.
         Aktywny bloker to zadanie, które NIE ma statusu DONE ani CANCELLED.
         """
+        if task_id is None:
+            return False
+
         try:
             task = TaskModel.objects.get(id=task_id)
 
             # Pobierz liczbę blokerów, które nie są "zamknięte"
-            active_blockers_count = task.blocked_by.exclude(
-                status__in=[
-                    TaskStatus.DONE.value,
-                    'cancelled'
-                ]
-            ).count()
+            active_blockers_count = task.blocked_by.exclude(status__in=[TaskStatus.DONE.value, "cancelled"]).count()
 
             return active_blockers_count > 0
 
@@ -153,10 +154,37 @@ class DjangoTaskRepository(ITaskRepository):
             # Jeśli zadanie nie istnieje, technicznie nie ma blokerów (albo rzucamy błąd)
             return False
 
-    def increment_recurring_stats(self, pattern_id: int):
-        from apps.tasks.models import RecurringPattern
+    def increment_recurring_stats(self, pattern_id: int | None) -> None:
         from django.db.models import F
 
-        RecurringPattern.objects.filter(id=pattern_id).update(
-            completed_count=F('completed_count') + 1
-        )
+        from apps.tasks.models import RecurringPattern
+
+        if pattern_id is not None:
+            RecurringPattern.objects.filter(id=pattern_id).update(completed_count=F("completed_count") + 1)
+
+    def create(self, user_id: int, task_data: Dict[str, Any]) -> TaskEntity:
+        """Create a new task."""
+        task = TaskModel.objects.create(user_id=user_id, **task_data)
+        return self.to_entity(task)
+
+    def update(self, task: TaskEntity, update_data: Dict[str, Any]) -> TaskEntity:
+        """Update an existing task."""
+        if task.id is None:
+            raise ValueError("Cannot update task without ID")
+        TaskModel.objects.filter(id=task.id).update(**update_data)
+        updated_task = TaskModel.objects.get(id=task.id)
+        return self.to_entity(updated_task)
+
+    def delete(self, task_id: int) -> None:
+        """Delete a task."""
+        TaskModel.objects.filter(id=task_id).delete()
+
+    def get_by_user(self, user_id: int) -> List[TaskEntity]:
+        """Get all tasks for a user."""
+        qs = TaskModel.objects.filter(user_id=user_id).select_related("area", "project__goal")
+        return [self.to_entity(t) for t in qs]
+
+    def filter_by_user_and_status(self, user_id: int, status: TaskStatus) -> List[TaskEntity]:
+        """Filter tasks by user and status."""
+        qs = TaskModel.objects.filter(user_id=user_id, status=status.value).select_related("area", "project__goal")
+        return [self.to_entity(t) for t in qs]

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("goals", "0001_initial"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="goal",
             name="progress",
-            field=models.IntegerField(
-                default=0, help_text="Postęp w procentach (0-100)"
-            ),
+            field=models.IntegerField(default=0, help_text="Postęp w procentach (0-100)"),
         ),
     ]

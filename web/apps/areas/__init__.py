@@ -1,1 +1,1 @@
-default_app_config = 'apps.areas.apps.AreasConfig'
+default_app_config = "apps.areas.apps.AreasConfig"

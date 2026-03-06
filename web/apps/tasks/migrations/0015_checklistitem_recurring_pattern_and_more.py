@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0014_remove_recurringpattern_interval_days_and_more"),
     ]

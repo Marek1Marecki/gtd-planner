@@ -1,13 +1,14 @@
 # apps/projects/services/project_service.py
+from apps.projects.domain.services import CPMNode, CPMService
 from apps.tasks.models import Task
-from apps.projects.domain.services import CPMService, CPMNode
 
 
 class ProjectService:
-    def recalculate_cpm(self, project_id: int):
+    def recalculate_cpm(self, project_id: int) -> None:
         # 1. Pobierz zadania projektu
-        tasks = Task.objects.filter(project_id=project_id, status__in=['todo', 'scheduled', 'blocked', 'inbox'])
-        if not tasks: return
+        tasks = Task.objects.filter(project_id=project_id, status__in=["todo", "scheduled", "blocked", "inbox"])
+        if not tasks:
+            return
 
         # 2. Konwersja na nody CPM
         nodes = []
@@ -15,7 +16,7 @@ class ProjectService:
             # duration w minutach
             duration = t.duration_max or t.duration_min or 30
             # dependencies (pobieramy ID)
-            deps = list(t.blocked_by.values_list('id', flat=True))
+            deps = list(t.blocked_by.values_list("id", flat=True))
 
             nodes.append(CPMNode(task_id=t.id, duration=duration, dependencies=deps))
 
@@ -34,5 +35,5 @@ class ProjectService:
                     tasks_to_update.append(t)
 
         if tasks_to_update:
-            Task.objects.bulk_update(tasks_to_update, ['is_critical_path'])
+            Task.objects.bulk_update(tasks_to_update, ["is_critical_path"])
             print(f"CPM: Zaktualizowano {len(tasks_to_update)} zadań w projekcie {project_id}")

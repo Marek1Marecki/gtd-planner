@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0009_task_area"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="task",
             name="is_milestone",
-            field=models.BooleanField(
-                default=False, help_text="Oznacza punkt kontrolny projektu"
-            ),
+            field=models.BooleanField(default=False, help_text="Oznacza punkt kontrolny projektu"),
         ),
     ]

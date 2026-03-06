@@ -2,7 +2,42 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h2 class="mb-4">🧠 Przegląd Tygodniowy</h2>
+    <h2 class="mb-4">🧠 Przegląd Tygodniowy / Weekly Review</h2>
+    
+    <!-- Task Statistics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Task Statistics</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-primary">{{ total_tasks }}</h4>
+                        <small>Total Tasks</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-success">{{ completed_tasks }}</h4>
+                        <small>Completed</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-warning">{{ todo_tasks }}</h4>
+                        <small>To Do</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-info">{{ scheduled_tasks }}</h4>
+                        <small>Scheduled</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Alerty Strategiczne -->
     {% if empty_projects or stagnant_goals %}
@@ -250,7 +285,7 @@
 
     <!-- Sekcja Planowania (Na dole) -->
     <div class="card mt-5 border-primary">
-        <div class="card-header bg-primary text-white fw-bold">Zakończenie Przeglądu</div>
+        <div class="card-header bg-primary text-white fw-bold">Zakończenie Przeglądu / Review Form</div>
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}

@@ -1,7 +1,7 @@
 # ===============================
 # Stage 1: builder
 # ===============================
-FROM python:3.14-slim AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --no-dev --frozen
 # ===============================
 # Stage 2: runtime
 # ===============================
-FROM python:3.14-slim
+FROM python:3.14-slim-bookworm
 
 WORKDIR /app
 
@@ -36,8 +36,8 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')" || exit 1
+HEALTHCHECK --interval=120s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"
 
 USER appuser
 

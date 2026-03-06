@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
 
 
@@ -16,20 +16,19 @@ class Habit(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    area = models.ForeignKey(
-        'areas.Area',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='habits'
-    )
+    area = models.ForeignKey("areas.Area", null=True, blank=True, on_delete=models.SET_NULL, related_name="habits")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
 class HabitLog(models.Model):
-    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='logs')
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name="logs")
     date = models.DateField(default=timezone.now)
 
     class Meta:
-        unique_together = ('habit', 'date')  # Jeden wpis na dzień
+        unique_together = ("habit", "date")  # Jeden wpis na dzień
+        ordering = ["-date"]  # Najnowsze na górze
+
+    def __str__(self) -> str:
+        return f"{self.habit.title} - {self.date}"

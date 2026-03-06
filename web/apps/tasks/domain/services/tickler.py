@@ -1,11 +1,12 @@
 # apps/tasks/domain/services/tickler.py
-from datetime import date
-from django.db.models import Q
-from apps.tasks.models import Task, TaskStatus
+from datetime import date, timedelta
+from typing import Any
+
+from apps.tasks.models import Task
 
 
 class TicklerService:
-    def get_tasks_for_review(self, user):
+    def get_tasks_for_review(self, user: Any) -> Any:
         """
         Zwraca zadania, które wymagają uwagi dzisiaj.
         Warunki:
@@ -17,20 +18,13 @@ class TicklerService:
         # Zapytanie ORM (Adapter)
         # Szukamy zadań "wstrzymanych", których termin przeglądu nadszedł
         return Task.objects.filter(
-            user=user,
-            status__in=['waiting', 'delegated', 'postponed'],
-            review_date__lte=today
-        ).order_by('review_date')
+            user=user, status__in=["waiting", "delegated", "postponed"], review_date__lte=today
+        ).order_by("review_date")
 
-
-    def get_stale_waiting_tasks(self, user, days=3):
+    def get_stale_waiting_tasks(self, user: Any, days: int = 3) -> Any:
         """Zwraca zadania waiting bez daty przeglądu, które wiszą dłużej niż X dni."""
         from django.utils import timezone
-        threshold = timezone.now() - timezone.timedelta(days=days)
 
-        return Task.objects.filter(
-            user=user,
-            status='waiting',
-            review_date__isnull=True,
-            updated_at__lte=threshold
-        )
+        threshold = timezone.now() - timedelta(days=days)
+
+        return Task.objects.filter(user=user, status="waiting", review_date__isnull=True, updated_at__lte=threshold)

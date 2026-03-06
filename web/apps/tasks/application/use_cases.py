@@ -1,8 +1,10 @@
 # apps/tasks/application/use_cases.py
 from dataclasses import dataclass
 from typing import Optional
+
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
+
 
 @dataclass
 class CreateTaskInput:
@@ -18,7 +20,9 @@ class CreateTaskInput:
     area_id: Optional[int] = None
     is_milestone: bool = False
     goal_id: Optional[int] = None
-    status: str = 'inbox'
+    status: str = "inbox"
+    priority: int = 3
+
 
 class CreateTaskUseCase:
     def __init__(self, repository: ITaskRepository):
@@ -42,6 +46,7 @@ class CreateTaskUseCase:
             area_id=input_dto.area_id,
             is_milestone=input_dto.is_milestone,
             goal_id=input_dto.goal_id,
+            priority=input_dto.priority,
         )
 
         return self.repository.save(task, user_id=input_dto.user_id)

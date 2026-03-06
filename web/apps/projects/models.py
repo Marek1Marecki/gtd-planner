@@ -1,6 +1,6 @@
 # apps/projects/models.py
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Project(models.Model):
@@ -10,42 +10,29 @@ class Project(models.Model):
 
     # Hierarchia (Podprojekty)
     parent_project = models.ForeignKey(
-        'self',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='subprojects'
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="subprojects"
     )
 
     # Powiązanie z Celem (Lazy reference string, aby uniknąć circular imports)
-    goal = models.ForeignKey(
-        'goals.Goal',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='projects'
-    )
+    goal = models.ForeignKey("goals.Goal", null=True, blank=True, on_delete=models.SET_NULL, related_name="projects")
 
     status = models.CharField(
         max_length=20,
-        default='active',
+        default="active",
         choices=[
-            ('active', 'Aktywny'),
-            ('completed', 'Ukończony'),
-            ('on_hold', 'Wstrzymany'), # <-- NOWE
-            ('archived', 'Zarchiwizowany')
-        ]
+            ("active", "Aktywny"),
+            ("completed", "Ukończony"),
+            ("on_hold", "Wstrzymany"),  # <-- NOWE
+            ("archived", "Zarchiwizowany"),
+        ],
     )
     deadline = models.DateField(null=True, blank=True)
 
-    area = models.ForeignKey(
-        'areas.Area',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='projects'
-    )
+    area = models.ForeignKey("areas.Area", null=True, blank=True, on_delete=models.SET_NULL, related_name="projects")
 
-    tags = models.ManyToManyField('contexts.Tag', blank=True, related_name='projects')
+    tags = models.ManyToManyField("contexts.Tag", blank=True, related_name="projects")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title

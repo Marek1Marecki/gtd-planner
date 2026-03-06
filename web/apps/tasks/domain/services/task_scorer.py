@@ -1,38 +1,38 @@
 # apps/tasks/domain/services/task_scorer.py
-from typing import List, Optional
-from apps.tasks.domain.entities import TaskEntity, TaskStatus
-from apps.tasks.ports.repositories import ITaskRepository
-from datetime import date, datetime, timezone, timedelta
-from apps.tasks.models import Task, RecurringPattern
+from datetime import date, datetime, timezone
+from typing import Optional
+
+from apps.tasks.domain.entities import TaskEntity
 
 
 class TaskScorer:
-    def __init__(self, weights: dict = None):
+    def __init__(self, weights: dict[str, float] | None = None):
         # Domyślne wagi, jeśli nie podano
         self.weights = weights or {
-            'w_priority': 0.4,
-            'w_duration': 0.3,
-            'w_complexity': 0.3,
-            'w_urgency': 1.5,
-            'w_project_urgency': 1.0,
-            'bonus_energy_match': 0.5,
-            'bonus_sequence': 0.5,
-            'w_goal_urgency': 1.0,
-            'bonus_milestone': 2.0,  # Bardzo wysoki bonus!
+            "w_priority": 0.4,
+            "w_duration": 0.3,
+            "w_complexity": 0.3,
+            "w_urgency": 1.5,
+            "w_project_urgency": 1.0,
+            "bonus_energy_match": 0.5,
+            "bonus_sequence": 0.5,
+            "w_goal_urgency": 1.0,
+            "bonus_milestone": 2.0,  # Bardzo wysoki bonus!
         }
 
     def calculate_score(
-            self,
-            task: TaskEntity,
-            now: datetime,
-            slot_energy_level: int = 1,
-            last_project_id: Optional[int] = None,
-            sequence_count: int = 0,
-            hours_to_end_of_day: Optional[float] = None
-        ) -> float:
+        self,
+        task: TaskEntity,
+        now: datetime,
+        slot_energy_level: int = 1,
+        last_project_id: Optional[int] = None,
+        sequence_count: int = 0,
+        hours_to_end_of_day: Optional[float] = None,
+    ) -> float:
 
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
-        norm_priority = (task.priority - 1) / 4.0
+        # priority=1 to najwyższy, więc odwracamy skalę
+        norm_priority = (5 - task.priority) / 4.0
 
         # 2. Normalizacja Czasu
         d_exp = task.duration_expected
@@ -44,20 +44,28 @@ class TaskScorer:
 
         # Obliczamy wynik bazowy (musi być tutaj, przed użyciem w total_score)
         base_score = (
-            self.weights['w_priority'] * norm_priority +
-            self.weights['w_duration'] * norm_duration +
-            self.weights['w_complexity'] * norm_complexity
+            self.weights["w_priority"] * norm_priority
+            + self.weights["w_duration"] * norm_duration
+            + self.weights["w_complexity"] * norm_complexity
         )
 
         # 4. Urgency (Pilność)
         urgency_score = 0.0
         if task.due_date:
+            # Konwertuj date na datetime jeśli potrzebne
+            if isinstance(task.due_date, date) and not isinstance(task.due_date, datetime):
+                task_due = datetime.combine(task.due_date, datetime.min.time())
+                if now.tzinfo:
+                    task_due = task_due.replace(tzinfo=timezone.utc)
+            else:
+                task_due = task.due_date
+
             # Obsługa stref czasowych
-            if task.due_date.tzinfo and not now.tzinfo:
+            if task_due.tzinfo and not now.tzinfo:
                 now = now.replace(tzinfo=timezone.utc)
 
             # Oblicz różnicę czasu
-            time_left = task.due_date - now
+            time_left = task_due - now
             hours_left = time_left.total_seconds() / 3600
 
             if hours_left <= 0:
@@ -75,7 +83,7 @@ class TaskScorer:
         # 5. Bonus CPM (Critical Path Method)
         cpm_bonus = 0.0
         # Musimy dodać pole is_critical_path do TaskEntity! (zrób to w entities.py)
-        if getattr(task, 'is_critical_path', False):
+        if getattr(task, "is_critical_path", False):
             cpm_bonus = 2.0  # Bardzo wysoki bonus!
 
         # ----------------------------------------------------
@@ -89,32 +97,18 @@ class TaskScorer:
             # Im trudniejsze zadanie (wymaga więcej energii), tym większy bonus za dopasowanie
             # Np. Zrobienie trudnego zadania (3) w slocie (3) jest cenniejsze
             # niż zrobienie łatwego (1) w slocie (3).
-            energy_bonus = self.weights['bonus_energy_match'] * (task.energy_required / 3.0)
+            energy_bonus = self.weights["bonus_energy_match"] * (task.energy_required / 3.0)
 
         # Jeśli zadanie wymaga więcej niż mamy (np. 3 > 1), można dać karę (opcjonalnie)
         # elif task.energy_required > slot_energy_level:
         #     energy_bonus = -0.5
 
-        # --- NOWE: Sequence Bonus ---
-        seq_bonus = 0.0
-        if last_project_id and task.project_id == last_project_id:
-            # Jeśli to ten sam projekt -> Daj bonus
-            seq_bonus = self.weights.get('bonus_sequence', 0.5)
-
-            # Opcjonalnie: Tutaj można by dodać logikę "malejącego bonusu"
-            # (diminishing returns), jeśli przekazalibyśmy licznik "k".
-            # Na start stały bonus 0.5 jest wystarczający, by "przyciągnąć" kolegów.
-
         # --- NOWE: Goal Urgency ---
         goal_urgency = 0.0
         if task.goal_deadline:
-            # Obsługa stref czasowych
+            # Obsługa stref czasowych (tylko stdlib)
             if task.goal_deadline.tzinfo is None and now.tzinfo:
-                from django.utils.timezone import make_aware
-                try:
-                    target = make_aware(task.goal_deadline)
-                except:
-                    target = task.goal_deadline  # Fallback
+                target = task.goal_deadline.replace(tzinfo=timezone.utc)
             else:
                 target = task.goal_deadline
 
@@ -168,21 +162,21 @@ class TaskScorer:
         # --- NOWE: Milestone Bonus ---
         milestone_bonus = 0.0
         if task.is_milestone:
-            milestone_bonus = self.weights['bonus_milestone']
+            milestone_bonus = self.weights["bonus_milestone"]
 
-        # --- NOWE: Diminishing Sequence Bonus ---
+        # --- NOWE: Sequence Bonus ---
         seq_bonus = 0.0
         if last_project_id and task.project_id == last_project_id:
-            base_bonus = self.weights.get('bonus_sequence', 0.5)
-            # Spadek wykładniczy: 100% -> 80% -> 64% -> 51% ...
-            decay_factor = 0.8
-            seq_bonus = base_bonus * (decay_factor ** sequence_count)
+            # Prosty bonus za ciągłość - nie malejący
+            seq_bonus = self.weights.get("bonus_sequence", 0.5)
 
         # --- AGING BONUS ---
         aging_bonus = 0.0
 
         # Używamy ready_since, a jak brak (np. stare zadania), to fallback do created_at (lub 0)
-        start_time = task.ready_since if task.ready_since else task.created_at  # Tutaj w Entity musisz mieć też created_at
+        start_time = (
+            task.ready_since if task.ready_since else task.created_at
+        )  # Tutaj w Entity musisz mieć też created_at
 
         # Jeśli nadal None (np. zadanie jest blocked), bonus = 0
         if start_time:
@@ -219,61 +213,54 @@ class TaskScorer:
                 eod_bonus -= 0.5
 
         # Sumowanie
-        total_score = base_score + \
-                      (self.weights['w_urgency'] * urgency_score) + \
-                      (1.0 * goal_urgency) + \
-                      (1.0 * project_urgency_score) + \
-                      energy_bonus + \
-                      cpm_bonus + \
-                      milestone_bonus + \
-                      seq_bonus + \
-                      aging_bonus + \
-                      eod_bonus
+        total_score = (
+            base_score
+            + (self.weights["w_urgency"] * urgency_score)
+            + (1.0 * goal_urgency)
+            + (1.0 * project_urgency_score)
+            + energy_bonus
+            + cpm_bonus
+            + milestone_bonus
+            + seq_bonus
+            + aging_bonus
+            + eod_bonus
+        )
 
         return round(total_score, 4)
 
-
     @staticmethod
-    def get_weights_for_strategy(strategy_name: str) -> dict:
+    def get_weights_for_strategy(strategy_name: str) -> dict[str, float]:
         """Zwraca zestaw wag dla danej strategii."""
         # Wagi domyślne (Balanced)
         defaults = {
-            'w_priority': 0.4,
-            'w_duration': 0.3,
-            'w_complexity': 0.3,
-            'w_urgency': 1.5,
-            'w_goal_urgency': 1.0,
-            'w_project_urgency': 1.0,
-            'bonus_sequence': 0.5,
-            'bonus_energy_match': 0.5,
-            'bonus_milestone': 2.0
+            "w_priority": 0.4,
+            "w_duration": 0.3,
+            "w_complexity": 0.3,
+            "w_urgency": 1.5,
+            "w_goal_urgency": 1.0,
+            "w_project_urgency": 1.0,
+            "bonus_sequence": 0.5,
+            "bonus_energy_match": 0.5,
+            "bonus_milestone": 2.0,
         }
 
-        if strategy_name == 'warmup':
+        if strategy_name == "warmup":
             # Rozgrzewka: Promuj zadania proste (complexity) i krótkie (duration)
             # Ignoruj priorytet (chcemy się rozkręcić, a nie robić ważne rzeczy)
-            return {
-                **defaults,
-                'w_complexity': 0.8,
-                'w_duration': 0.6,
-                'w_priority': 0.1
-            }
+            return {**defaults, "w_complexity": 0.8, "w_duration": 0.6, "w_priority": 0.1}
 
-        elif strategy_name == 'deep_work':
+        elif strategy_name == "deep_work":
             # Głęboka praca: Bardzo wysoki bonus za ciągłość projektu
-            return {
-                **defaults,
-                'bonus_sequence': 2.5
-            }
+            return {**defaults, "bonus_sequence": 2.5}
 
-        elif strategy_name == 'deadline':
+        elif strategy_name == "deadline":
             # Tryb awaryjny: Liczą się tylko terminy (Urgency)
             return {
                 **defaults,
-                'w_urgency': 3.0,
-                'w_goal_urgency': 2.0,
-                'w_project_urgency': 2.0,
-                'w_complexity': 0.0  # Trudność nie ma znaczenia, trzeba dowieźć
+                "w_urgency": 3.0,
+                "w_goal_urgency": 2.0,
+                "w_project_urgency": 2.0,
+                "w_complexity": 0.0,  # Trudność nie ma znaczenia, trzeba dowieźć
             }
 
         return defaults

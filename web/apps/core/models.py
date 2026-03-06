@@ -1,12 +1,14 @@
 # apps/core/models.py
-from django.db import models
+from typing import Any
+
 from django.contrib.auth.models import User
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
 
     # Ramy czasowe (domyślnie 9-17 praca, 17-22 prywatne)
     work_start_hour = models.TimeField(default="09:00")
@@ -27,33 +29,33 @@ class UserProfile(models.Model):
     # NOWE: Strategia algorytmu
     current_strategy = models.CharField(
         max_length=20,
-        default='balanced',
+        default="balanced",
         choices=[
-            ('balanced', 'Zrównoważony'),
-            ('warmup', 'Rozgrzewka (Proste/Krótkie)'),
-            ('deep_work', 'Głęboka Praca (Projekt)'),
-            ('deadline', 'Tryb Awaryjny (Terminy)')
-        ]
+            ("balanced", "Zrównoważony"),
+            ("warmup", "Rozgrzewka (Proste/Krótkie)"),
+            ("deep_work", "Głęboka Praca (Projekt)"),
+            ("deadline", "Tryb Awaryjny (Terminy)"),
+        ],
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Profile of {self.user.username}"
 
 
 # Sygnał: Twórz profil automatycznie przy tworzeniu Usera
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_user_profile(sender: Any, instance: Any, created: bool, **kwargs: Any) -> None:
     if created:
         UserProfile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
+def save_user_profile(sender: Any, instance: Any, **kwargs: Any) -> None:
     instance.profile.save()
 
 
 class GoogleCredentials(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='google_creds')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="google_creds")
     token = models.TextField()  # Access Token
     refresh_token = models.TextField(null=True)  # Refresh Token (ważne!)
     token_uri = models.CharField(max_length=255)
@@ -64,6 +66,5 @@ class GoogleCredentials(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Google Creds for {self.user.username}"
-

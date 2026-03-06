@@ -1,0 +1,53 @@
+# apps/projects/domain/prediction.py
+from datetime import date, timedelta
+from typing import Any
+
+from django.utils import timezone
+
+
+class ProjectPredictor:
+    def __init__(self, daily_capacity_minutes: int = 240) -> None:  # Domyślnie 4h dziennie na projekty
+        self.daily_capacity = daily_capacity_minutes
+
+    def predict_completion_date(self, project_tasks: list[Any]) -> date:
+        """
+        Oblicza datę zakończenia na podstawie sumy czasów zadań.
+        """
+        # 1. Policz ile minut pracy zostało
+        # (Bierzemy d_exp czyli średnią z min/max, lub default)
+        total_minutes_left = 0
+        for task in project_tasks:
+            d_min = task.duration_min or 30
+            d_max = task.duration_max or d_min
+            d_exp = int((d_min + d_max) / 2)
+            total_minutes_left += d_exp
+
+        if total_minutes_left == 0:
+            return timezone.now().date()
+
+        # 2. Symulacja dni
+        # Use timezone.localtime() which respects mocked time in Django tests
+        current_date = timezone.localtime().date()
+        minutes_remaining = total_minutes_left
+# Special case: if work can be done today, return today        if total_minutes_left <= self.daily_capacity and timezone.localtime().date().weekday() < 5:            return timezone.localtime().date()        minutes_remaining = total_minutes_left
+
+        while minutes_remaining > 0:
+            # Check if we can complete work on current day before incrementing
+            if current_date.weekday() < 5:  # Weekday
+                if minutes_remaining <= self.daily_capacity:
+                    # Work completes today, return current date
+                    return current_date
+# For multi-day tasks, always increment first        if total_minutes_left > self.daily_capacity:            current_date += timedelta(days=1)            minutes_remaining = total_minutes_left            while minutes_remaining > 0:                if current_date.weekday() >= 5:                    current_date += timedelta(days=1)                    continue                minutes_remaining -= self.daily_capacity                if minutes_remaining > 0:                    current_date += timedelta(days=1)            return current_date
+
+            # Increment date for next iteration
+            current_date += timedelta(days=1)
+
+            # Skip weekends
+            if current_date.weekday() >= 5:  # Weekend
+                continue  # Skip weekend, don't do work
+
+            # Do work on the workable day
+            minutes_remaining -= self.daily_capacity
+
+        return current_date
+# For multi-day tasks, always increment first        if total_minutes_left > self.daily_capacity:            current_date += timedelta(days=1)            minutes_remaining = total_minutes_left            while minutes_remaining > 0:                if current_date.weekday() >= 5:                    current_date += timedelta(days=1)                    continue                minutes_remaining -= self.daily_capacity                if minutes_remaining > 0:                    current_date += timedelta(days=1)            return current_date

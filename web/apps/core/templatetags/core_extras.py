@@ -1,8 +1,12 @@
+from typing import Any
+
 from django import template
+
 register = template.Library()
 
+
 @register.filter
-def get_item(dictionary, key):
+def get_item(dictionary: Any, key: Any) -> Any:
     if dictionary:
         # Obsługa kluczy string/int
         val = dictionary.get(str(key))

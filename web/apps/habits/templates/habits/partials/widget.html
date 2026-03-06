@@ -12,7 +12,7 @@
                 </span>
             </div>
 
-            {% if habit.is_completed_today %}
+            {% if habit.last_completed_date == today %}
                 <span class="text-success"><i class="bi bi-check-circle-fill fs-4"></i></span>
             {% else %}
                 <button class="btn btn-outline-success btn-sm rounded-circle"

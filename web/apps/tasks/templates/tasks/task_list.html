@@ -67,7 +67,7 @@
                             </button>
                         {% endif %}
 
-                        <!-- Przycisk Na Dziś (Tylko dla Todo/Inbox) -->
+                        <!-- Przycisk Na Dziś (Tylko dla DoZrobienia/Inbox) -->
                         {% if task.status == 'todo' or task.status == 'inbox' %}
                             <button class="btn btn-sm btn-outline-primary" title="Na Dziś"
                                     hx-post="{% url 'task_force_today' task.pk %}"
@@ -90,7 +90,7 @@
                         </a>
 
                         <!-- Tiny Step (tylko dla trudnych lub długich) -->
-                        {% if task.complexity >= 4 or task.duration_expected > 60 %}
+                        {% if task.complexity >= 4 or task.duration_max > 60 %}
                             <button class="btn btn-sm btn-outline-warning" title="Utwórz Mały Krok (5 min)"
                                     hx-post="{% url 'task_tiny_step' task.pk %}"
                                     hx-swap="outerHTML">

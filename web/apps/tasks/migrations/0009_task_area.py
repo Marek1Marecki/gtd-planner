@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("areas", "0001_initial"),
         ("tasks", "0008_checklistitem"),

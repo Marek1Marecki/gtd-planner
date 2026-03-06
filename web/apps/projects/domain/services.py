@@ -1,6 +1,6 @@
 # apps/projects/domain/services.py
-from typing import List, Dict
 from dataclasses import dataclass
+from typing import Dict, List
 
 
 @dataclass
@@ -35,12 +35,14 @@ class CPMService:
         # ---------------------------
         processed = set()
 
-        def calc_forward(node_id):
-            if node_id in processed: return
+        def calc_forward(node_id: int) -> None:
+            if node_id in processed:
+                return
 
             # Zabezpieczenie: jeśli węzeł nie istnieje (np. został usunięty/zakończony), ignoruj
             node = node_map.get(node_id)
-            if not node: return
+            if not node:
+                return
 
             max_predecessor_ef = 0
             for dep_id in node.dependencies:
@@ -66,17 +68,19 @@ class CPMService:
         processed = set()
 
         # Budowa mapy odwrotnej (Successors) dla łatwiejszego przeszukiwania
-        successors = {tid: [] for tid in node_map}
+        successors: Dict[int, List[int]] = {tid: [] for tid in node_map}
         for node in node_map.values():
             for dep_id in node.dependencies:
                 if dep_id in successors:
                     successors[dep_id].append(node.task_id)
 
-        def calc_backward(node_id):
-            if node_id in processed: return
+        def calc_backward(node_id: int) -> None:
+            if node_id in processed:
+                return
 
             node = node_map.get(node_id)
-            if not node: return
+            if not node:
+                return
 
             min_successor_ls = project_duration
 
@@ -94,7 +98,7 @@ class CPMService:
 
             node.ls = node.lf - node.duration
             node.float_val = node.ls - node.es
-            node.is_critical = (node.float_val == 0)
+            node.is_critical = node.float_val == 0
             processed.add(node_id)
 
         for tid in node_map:

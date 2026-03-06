@@ -1,4 +1,4 @@
-from .task_service import TaskService
-from .task_scorer import TaskScorer
-from .tickler import TicklerService
-from .recurrence import RecurrenceService
+from .recurrence import RecurrenceService as RecurrenceService
+from .task_scorer import TaskScorer as TaskScorer
+from .task_service import TaskService as TaskService
+from .tickler import TicklerService as TicklerService

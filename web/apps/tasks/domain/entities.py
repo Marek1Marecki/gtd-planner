@@ -1,22 +1,22 @@
 # apps/tasks/domain/entities.py
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import datetime
 from enum import Enum
+from typing import List, Optional
 
 
 class TaskStatus(str, Enum):
-    INBOX = 'inbox'
-    TODO = 'todo'
-    SCHEDULED = 'scheduled'
-    DONE = 'done'
-    WAITING = 'waiting'
-    BLOCKED = 'blocked'
-    DELEGATED = 'delegated'
-    POSTPONED = 'postponed'
-    PAUSED = 'paused'
-    OVERDUE = 'overdue'
-    CANCELLED = 'cancelled'
+    INBOX = "inbox"
+    TODO = "todo"
+    SCHEDULED = "scheduled"
+    DONE = "done"
+    WAITING = "waiting"
+    BLOCKED = "blocked"
+    DELEGATED = "delegated"
+    POSTPONED = "postponed"
+    PAUSED = "paused"
+    OVERDUE = "overdue"
+    CANCELLED = "cancelled"
 
 
 @dataclass
@@ -25,6 +25,7 @@ class TaskEntity:
     title: str
     description: str = ""
     status: TaskStatus = TaskStatus.INBOX
+    user_id: Optional[int] = None  # User ownership
 
     # Czas
     duration_min: Optional[int] = None  # minuty
@@ -57,7 +58,6 @@ class TaskEntity:
     blocked_by: List[int] = field(default_factory=list)
 
     created_at: Optional[datetime] = None
-
 
     @property
     def duration_expected(self) -> int:

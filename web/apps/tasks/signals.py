@@ -1,14 +1,18 @@
 # apps/tasks/signals.py
-from django.db.models.signals import pre_save, post_save
+from typing import Any
+
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from apps.reports.services import ActivityLogger
-from apps.reports.models import ActivityLog
 from django.utils import timezone
+
+from apps.reports.models import ActivityLog
+from apps.reports.services import ActivityLogger
+
 from .models import Task
-from .domain.entities import TaskStatus
+
 
 @receiver(pre_save, sender=Task)
-def track_task_changes(sender, instance, **kwargs):
+def track_task_changes(sender: Any, instance: Any, **kwargs: Any) -> None:
     """
     Przed zapisem sprawdzamy stary stan zadania, żeby wykryć zmiany.
     Zapisujemy to w tymczasowym atrybucie instancji.
@@ -24,42 +28,36 @@ def track_task_changes(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Task)
-def log_task_changes(sender, instance, created, **kwargs):
+def log_task_changes(sender: Any, instance: Any, created: Any, **kwargs: Any) -> None:
     """
     Po zapisie sprawdzamy, co się zmieniło i logujemy.
     """
     user = instance.user  # Zakładamy, że user jest w modelu Task
 
     if created:
-        ActivityLogger.log(
-            user, instance,
-            ActivityLog.ActionType.CREATED,
-            f"Utworzono zadanie: {instance.title}"
-        )
+        ActivityLogger.log(user, instance, ActivityLog.ActionType.CREATED, f"Utworzono zadanie: {instance.title}")
 
-    elif hasattr(instance, '_old_status') and instance._old_status != instance.status:
+    elif hasattr(instance, "_old_status") and instance._old_status != instance.status:
         # Wykryto zmianę statusu!
         description = f"Zmiana statusu: {instance.get_status_display()}"
 
         # Specjalny przypadek: Ukończenie
         action_type = ActivityLog.ActionType.STATUS_CHANGE
-        if instance.status == 'done':
+        if instance.status == "done":
             action_type = ActivityLog.ActionType.COMPLETED
             description = "Zadanie ukończone! 🎉"
 
         ActivityLogger.log(
-            user, instance,
+            user,
+            instance,
             action_type,
             description,
-            details={
-                'old_status': instance._old_status,
-                'new_status': instance.status
-            }
+            details={"old_status": instance._old_status, "new_status": instance.status},
         )
 
 
 @receiver(post_save, sender=Task)
-def update_goal_progress(sender, instance, **kwargs):
+def update_goal_progress(sender: Any, instance: Any, **kwargs: Any) -> None:
     """Przelicz postęp projektu i celu po zmianie zadania."""
     if instance.project:
         # 1. Przelicz Projekt (opcjonalnie, jeśli projekt ma pole progress)
@@ -77,12 +75,11 @@ def update_goal_progress(sender, instance, **kwargs):
             # Agregacja:
             # Policz wszystkie zadania w projektach tego celu
             stats = Task.objects.filter(project__goal=goal).aggregate(
-                total=Count('id'),
-                done=Count('id', filter=Q(status='done'))
+                total=Count("id"), done=Count("id", filter=Q(status="done"))
             )
 
-            total = stats['total']
-            done = stats['done']
+            total = stats["total"]
+            done = stats["done"]
 
             new_progress = int((done / total) * 100) if total > 0 else 0
 
@@ -92,11 +89,11 @@ def update_goal_progress(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=Task)
-def update_ready_since(sender, instance, **kwargs):
+def update_ready_since(sender: Any, instance: Any, **kwargs: Any) -> None:
     """Aktualizuje ready_since przy wejściu w status aktywny."""
 
-    active_statuses = ['todo', 'scheduled']
-    inactive_statuses = ['blocked', 'waiting', 'delegated', 'postponed', 'paused', 'inbox']
+    active_statuses = ["todo", "scheduled"]
+    inactive_statuses = ["blocked", "waiting", "delegated", "postponed", "paused", "inbox"]
 
     if instance.id:
         try:
@@ -124,23 +121,24 @@ def update_ready_since(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Task)
-def track_recurring_completion(sender, instance, created, **kwargs):
+def track_recurring_completion(sender: Any, instance: Any, created: Any, **kwargs: Any) -> None:
     """Zlicza ukończenie zadania cyklicznego."""
     # Jeśli zadanie jest DONE, ma szablon i właśnie zmieniliśmy status
-    if not created and instance.status == 'done' and instance.recurring_pattern:
-        if hasattr(instance, '_old_status') and instance._old_status != 'done':
+    if not created and instance.status == "done" and instance.recurring_pattern:
+        if hasattr(instance, "_old_status") and instance._old_status != "done":
             # Inkrementacja licznika
             # Używamy F() dla bezpieczeństwa przy współbieżności (opcjonalnie)
             from django.db.models import F
-            instance.recurring_pattern.completed_count = F('completed_count') + 1
+
+            instance.recurring_pattern.completed_count = F("completed_count") + 1
             instance.recurring_pattern.save()
 
 
 @receiver(pre_save, sender=Task)
-def set_completed_at(sender, instance, **kwargs):
+def set_completed_at(sender: Any, instance: Any, **kwargs: Any) -> None:
     # Jeśli status zmienia się na DONE, a data jest pusta -> ustaw teraz
-    if instance.status == 'done' and not instance.completed_at:
+    if instance.status == "done" and not instance.completed_at:
         instance.completed_at = timezone.now()
     # Jeśli status zmienia się z DONE na coś innego (reopen) -> wyczyść
-    elif instance.status != 'done' and instance.completed_at:
+    elif instance.status != "done" and instance.completed_at:
         instance.completed_at = None

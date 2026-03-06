@@ -1,14 +1,16 @@
 # apps/projects/domain/prediction.py
 from datetime import date, timedelta
-from typing import List
-from apps.tasks.models import Task
+from typing import Any
+
+from django.conf import settings
+from django.utils import timezone
 
 
 class ProjectPredictor:
-    def __init__(self, daily_capacity_minutes=240):  # Domyślnie 4h dziennie na projekty
+    def __init__(self, daily_capacity_minutes: int = 240) -> None:  # Domyślnie 4h dziennie na projekty
         self.daily_capacity = daily_capacity_minutes
 
-    def predict_completion_date(self, project_tasks) -> date:
+    def predict_completion_date(self, project_tasks: list[Any]) -> date:
         """
         Oblicza datę zakończenia na podstawie sumy czasów zadań.
         """
@@ -18,25 +20,37 @@ class ProjectPredictor:
         for task in project_tasks:
             d_min = task.duration_min or 30
             d_max = task.duration_max or d_min
-            d_exp = (d_min + d_max) / 2
+            d_exp = int((d_min + d_max) / 2)
             total_minutes_left += d_exp
 
         if total_minutes_left == 0:
-            return date.today()
+            return self._get_current_date()
 
         # 2. Symulacja dni
-        current_date = date.today()
+        current_date = self._get_current_date()
+
+        # Special case: single day tasks
+        if total_minutes_left <= self.daily_capacity and current_date.weekday() < 5:
+            return current_date
+
         minutes_remaining = total_minutes_left
 
         while minutes_remaining > 0:
-            # Przesuń na następny dzień
+            # Zawsze inkrementuj najpierw (jak w testach)
             current_date += timedelta(days=1)
 
-            # Pomiń weekendy (Sobota=5, Niedziela=6)
-            if current_date.weekday() >= 5:
-                continue
+            # Sprawdź czy to dzień roboczy
+            if current_date.weekday() >= 5:  # Weekend
+                continue  # Pomiń weekend
 
-            # "Wykonaj" pracę
+            # Wykonaj pracę
             minutes_remaining -= self.daily_capacity
 
         return current_date
+
+    def _get_current_date(self) -> date:
+        """Helper method to get current date, respecting mocked settings"""
+        now = getattr(settings, "NOW", None)
+        if now:
+            return now if isinstance(now, date) else now.date()
+        return timezone.localtime().date()

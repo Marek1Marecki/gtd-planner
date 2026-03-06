@@ -1,11 +1,11 @@
-#apps/tasks/domain/services/recurrence.py
+# apps/tasks/domain/services/recurrence.py
 from datetime import date, datetime, timedelta
 from typing import List
+
 from dateutil.rrule import rrulestr
-from django.utils import timezone
-from apps.tasks.models import Task, RecurringPattern
+
 from apps.tasks.domain.entities import TaskStatus
-from apps.tasks.models import ChecklistItem
+from apps.tasks.models import ChecklistItem, RecurringPattern, Task
 
 
 class RecurrenceService:
@@ -18,7 +18,7 @@ class RecurrenceService:
         patterns = RecurringPattern.objects.filter(
             is_active=True,
             is_dynamic=False,  # Tylko sztywne (kalendarzowe)
-            next_run_date__lte=today
+            next_run_date__lte=today,
         )
 
         for pattern in patterns:
@@ -37,8 +37,8 @@ class RecurrenceService:
             # To ważne przy rrule, żeby nie spamować
             active_exists = Task.objects.filter(
                 recurring_pattern=pattern,
-                due_date=pattern.next_run_date,  # Sprawdzamy konkretną datę
-                status__in=[TaskStatus.TODO, TaskStatus.SCHEDULED, TaskStatus.OVERDUE, TaskStatus.DONE]
+                due_date__date=pattern.next_run_date,  # Sprawdzamy konkretną datę
+                status__in=[TaskStatus.TODO, TaskStatus.SCHEDULED, TaskStatus.OVERDUE, TaskStatus.DONE],
             ).exists()
 
             if active_exists:
@@ -56,7 +56,7 @@ class RecurrenceService:
                 duration_max=pattern.default_duration_min,
                 status=TaskStatus.TODO,
                 recurring_pattern=pattern,
-                due_date=pattern.next_run_date
+                due_date=pattern.next_run_date,
             )
             # --- NOWE: Kopiowanie Checklisty ---
             # Pobierz punkty z szablonu
@@ -64,12 +64,7 @@ class RecurrenceService:
             for item in template_items:
                 # Utwórz kopię dla nowego zadania
                 # WAŻNE: is_completed=False (resetujemy ptaszki!)
-                ChecklistItem.objects.create(
-                    task=new_task,
-                    text=item.text,
-                    order=item.order,
-                    is_completed=False
-                )
+                ChecklistItem.objects.create(task=new_task, text=item.text, order=item.order, is_completed=False)
             # -----------------------------------
             generated.append(new_task)
 
@@ -81,7 +76,7 @@ class RecurrenceService:
 
         return generated
 
-    def handle_task_completion(self, task: Task):
+    def handle_task_completion(self, task: Task) -> None:
         """Obsługa trybu DYNAMICZNEGO (po wykonaniu)."""
         pattern = task.recurring_pattern
         if not pattern or not pattern.is_dynamic:
@@ -94,9 +89,9 @@ class RecurrenceService:
 
         today = date.today()
         # Prosta logika: Data wykonania + Interval
-        if pattern.frequency == 'WEEKLY':
+        if pattern.frequency == "WEEKLY":
             delta = timedelta(weeks=pattern.interval)
-        elif pattern.frequency == 'MONTHLY':
+        elif pattern.frequency == "MONTHLY":
             delta = timedelta(days=30 * pattern.interval)  # Uproszczenie
         else:  # DAILY
             delta = timedelta(days=pattern.interval)
@@ -104,7 +99,7 @@ class RecurrenceService:
         pattern.next_run_date = today + delta
         pattern.save()
 
-    def _update_next_run_date(self, pattern: RecurringPattern):
+    def _update_next_run_date(self, pattern: RecurringPattern) -> None:
         """Używa dateutil.rrule do wyznaczenia następnej daty kalendarzowej."""
         try:
             # Budujemy string RRULE

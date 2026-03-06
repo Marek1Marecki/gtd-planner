@@ -55,7 +55,7 @@
                     <h5 class="mb-1">{{ task.title }}</h5>
                     <small class="text-muted">
                         {% if task.context %}<span class="badge bg-secondary">{{ task.context.name }}</span>{% endif %}
-                        {{ task.get_status_display }} | {{ task.duration_expected }} min
+                        {{ task.get_status_display }} | {{ task.duration_min }} min
                     </small>
                 </div>
                 <i class="bi bi-chevron-right"></i>

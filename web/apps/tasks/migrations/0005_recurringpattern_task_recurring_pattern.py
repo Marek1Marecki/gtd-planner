@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("projects", "0001_initial"),
         ("tasks", "0004_task_is_critical_path_alter_task_status"),

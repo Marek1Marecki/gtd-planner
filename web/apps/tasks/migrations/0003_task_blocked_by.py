@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0002_task_project"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="task",
             name="blocked_by",
-            field=models.ManyToManyField(
-                blank=True, related_name="blocking", to="tasks.task"
-            ),
+            field=models.ManyToManyField(blank=True, related_name="blocking", to="tasks.task"),
         ),
     ]

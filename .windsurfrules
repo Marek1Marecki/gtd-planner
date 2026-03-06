@@ -1,0 +1,17 @@
+# GTD_Planner - Development Rules
+
+## Środowisko wykonawcze
+- Używamy `uv` jako menedżera pakietów.
+- Kod źródłowy znajduje się w katalogu `web/`.
+- Każde polecenie Pythona MUSI być poprzedzone `uv run`.
+- Zawsze ustawiaj `PYTHONPATH=web` przed uruchomieniem czegokolwiek z Django.
+
+## Testowanie i Jakość (Kluczowe!)
+- NIGDY nie używaj `python manage.py test`.
+- NIGDY nie używaj wbudowanego runnera `unittest`.
+- Wszystkie testy uruchamiaj przez `make check` (szybkie) lub `make test-full` (wszystkie z bazą).
+- Jeśli musisz uruchomić konkretny test, użyj: `PYTHONPATH=web uv run pytest web/ścieżka/do/testu.py`.
+
+## Docker
+- Baza danych (Postgres) i Redis działają w Dockerze.
+- Aby testy integracyjne działały, usługa `db` musi być uruchomiona (`make docker-up`).

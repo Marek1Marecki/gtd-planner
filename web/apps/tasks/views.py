@@ -1,62 +1,65 @@
 # apps/tasks/views.py
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from typing import Any
+
 from django.contrib.auth.decorators import login_required
-from .adapters.orm_repositories import DjangoTaskRepository
-from .application.use_cases import CreateTaskUseCase, CreateTaskInput
-from .models import Task
-from apps.projects.models import Project
-from apps.contexts.models import Context
-from .filters import TaskFilter
-from django.views.decorators.http import require_http_methods
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from apps.tasks.domain.services import TaskService
-from .domain.entities import TaskEntity, TaskStatus
-from .models import ChecklistItem
-from apps.areas.models import Area
-from apps.goals.models import Goal
-from apps.reports.models import ActivityLog
 from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+
+from apps.areas.models import Area
+from apps.contexts.models import Context
+from apps.goals.models import Goal
+from apps.projects.models import Project
+from apps.reports.models import ActivityLog
+from apps.tasks.domain.services import TaskService
+
+from .adapters.orm_repositories import DjangoTaskRepository
+from .application.use_cases import CreateTaskInput, CreateTaskUseCase
+from .domain.entities import TaskEntity, TaskStatus
+from .filters import TaskFilter
 from .forms import RecurrenceForm
-from .models import RecurringPattern
+from .models import ChecklistItem, Task
 
 
 @login_required
-def task_list_view(request):
+def task_list_view(request: Any) -> HttpResponse:
     """Widok listy zadań."""
     # Pobieramy zadania zalogowanego użytkownika
-    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
+    tasks = Task.objects.filter(user=request.user).order_by("-created_at")
 
-    return render(request, 'tasks/task_list.html', {'tasks': tasks})
+    return render(request, "tasks/task_list.html", {"tasks": tasks})
 
 
 @login_required
-def task_create_view(request):
+def task_create_view(request: Any) -> HttpResponse:
     """Widok tworzenia zadania (korzysta z Clean Architecture)."""
     if request.method == "POST":
-        title = request.POST.get('title')
-        desc = request.POST.get('description')
-        d_min = request.POST.get('duration_min')
-        d_max = request.POST.get('duration_max')
-        project_id = request.POST.get('project_id')
-        energy = request.POST.get('energy_required')
-        is_private = request.POST.get('is_private') == 'on'
-        context_id = request.POST.get('context_id')
-        area_id = request.POST.get('area_id')
-        is_milestone = request.POST.get('is_milestone') == 'on'
-        goal_id = request.POST.get('goal_id')
-        status = request.POST.get('status')
+        title = request.POST.get("title")
+        desc = request.POST.get("description")
+        d_min = request.POST.get("duration_min")
+        d_max = request.POST.get("duration_max")
+        project_id = request.POST.get("project_id")
+        energy = request.POST.get("energy_required")
+        is_private = request.POST.get("is_private") == "on"
+        context_id = request.POST.get("context_id")
+        area_id = request.POST.get("area_id")
+        is_milestone = request.POST.get("is_milestone") == "on"
+        goal_id = request.POST.get("goal_id")
+        status = request.POST.get("status")
+        priority = request.POST.get("priority")
 
         # Walidacja (opcjonalna, ale dobra praktyka)
         if not status:
-            status = 'inbox' # Domyślnie
+            status = "inbox"  # Domyślnie
 
         # Konwersja project_id (pusty string -> None)
         project_id_int = int(project_id) if project_id else None
 
         # Konwersja na int lub None (bo string "" to nie None)
         ctx_id_val = int(context_id) if context_id else None
+        priority_val = int(priority) if priority else 3
 
         # 1. Przygotowanie DTO (Data Transfer Object)
         input_dto = CreateTaskInput(
@@ -72,7 +75,8 @@ def task_create_view(request):
             area_id=int(area_id) if area_id else None,
             is_milestone=is_milestone,
             goal_id=int(goal_id) if goal_id else None,
-            status=status if status else 'inbox',
+            status=status if status else "inbox",
+            priority=priority_val,
         )
 
         # 2. Złożenie Use Case (Manual Dependency Injection)
@@ -85,8 +89,8 @@ def task_create_view(request):
 
             # Jeśli wybrano projekt, przekieruj do widoku projektu, w przeciwnym razie do listy zadań
             if project_id_int:
-                return redirect('project_detail', pk=project_id_int)
-            return redirect('task_list')
+                return redirect("project_detail", pk=project_id_int)
+            return redirect("task_list")
 
         except ValueError as e:
             return HttpResponse(f"Error: {e}", status=400)
@@ -98,28 +102,32 @@ def task_create_view(request):
     areas = Area.objects.filter(user=request.user)
     goals = Goal.objects.filter(user=request.user)
 
-    return render(request, 'tasks/task_form.html', {
-        'projects': projects,
-        'contexts': contexts,
-        'areas': areas,
-        'goals': goals,
-    })
+    return render(
+        request,
+        "tasks/task_form.html",
+        {
+            "projects": projects,
+            "contexts": contexts,
+            "areas": areas,
+            "goals": goals,
+        },
+    )
 
 
 @login_required
-def task_search_view(request):
+def task_search_view(request: Any) -> HttpResponse:
     # Pobieramy wszystkie zadania użytkownika
     # (Możemy tu dodać .select_related('context', 'project') dla optymalizacji)
-    qs = Task.objects.filter(user=request.user).select_related('context', 'project').order_by('-created_at')
+    qs = Task.objects.filter(user=request.user).select_related("context", "project").order_by("-created_at")
 
     f = TaskFilter(request.GET, queryset=qs)
 
-    return render(request, 'tasks/task_search.html', {'filter': f})
+    return render(request, "tasks/task_search.html", {"filter": f})
 
 
 @require_http_methods(["POST"])
 @login_required
-def task_complete_view(request, pk):
+def task_complete_view(request: Any, pk: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Używamy serwisu (Clean Architecture)
@@ -134,12 +142,12 @@ def task_complete_view(request, pk):
 
 @require_http_methods(["POST"])
 @login_required
-def task_force_today_view(request, pk):
+def task_force_today_view(request: Any, pk: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Logika: Ustaw deadline na dziś, status na scheduled, priorytet na max
     task.due_date = timezone.now()
-    task.status = 'scheduled'
+    task.status = "scheduled"
     task.priority = 5  # Boost!
     task.save()
 
@@ -148,20 +156,20 @@ def task_force_today_view(request, pk):
 
 @require_http_methods(["POST"])
 @login_required
-def task_resume_view(request, pk):
+def task_resume_view(request: Any, pk: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
-    if task.status == 'paused':
-        task.status = 'todo'  # Wracamy do puli
+    if task.status == "paused":
+        task.status = "todo"  # Wracamy do puli
         # Opcjonalnie: task.percent_complete zostaje bez zmian (historia postępu)
         task.save()
         return HttpResponse('<span class="badge bg-warning text-dark">Wznowiono!</span>')
 
-    return HttpResponse('Błąd', status=400)
+    return HttpResponse("Błąd", status=400)
 
 
 @login_required
-def task_edit_view(request, pk):
+def task_edit_view(request: Any, pk: int) -> HttpResponse:
     # 1. Pobierz zadanie (zabezpieczenie, że należy do usera)
     task_model = get_object_or_404(Task, pk=pk, user=request.user)
 
@@ -170,26 +178,26 @@ def task_edit_view(request, pk):
 
     if request.method == "POST":
         # 2. Pobierz dane z formularza
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        d_min = request.POST.get('duration_min')
-        d_max = request.POST.get('duration_max')
-        project_id = request.POST.get('project_id')
-        context_id = request.POST.get('context_id')
-        energy = request.POST.get('energy_required')
-        is_private = request.POST.get('is_private') == 'on'
-        area_id = request.POST.get('area_id')
-        is_milestone = request.POST.get('is_milestone') == 'on'
-        goal_id = request.POST.get('goal_id')
-        status = request.POST.get('status')
-        blocker_ids = request.POST.getlist('blocked_by') # Zwraca listę stringów ['1', '5']
+        title = request.POST.get("title")
+        description = request.POST.get("description")
+        d_min = request.POST.get("duration_min")
+        d_max = request.POST.get("duration_max")
+        project_id = request.POST.get("project_id")
+        context_id = request.POST.get("context_id")
+        energy = request.POST.get("energy_required")
+        is_private = request.POST.get("is_private") == "on"
+        area_id = request.POST.get("area_id")
+        is_milestone = request.POST.get("is_milestone") == "on"
+        goal_id = request.POST.get("goal_id")
+        status = request.POST.get("status")
+        blocker_ids = request.POST.getlist("blocked_by")  # Zwraca listę stringów ['1', '5']
 
         # 3. Zaktualizuj Encję (Tworzymy obiekt z ID, co wymusi UPDATE w repo)
         updated_task = TaskEntity(
             id=task_model.id,  # WAŻNE: Przekazujemy ID
             title=title,
             description=description,
-            status=TaskStatus(status),
+            status=TaskStatus(status) if status else TaskStatus(task_model.status),  # Use existing status if None
             duration_min=int(d_min) if d_min else None,
             duration_max=int(d_max) if d_max else None,
             project_id=int(project_id) if project_id else None,
@@ -206,7 +214,7 @@ def task_edit_view(request, pk):
         # 4. Zapisz (Repozytorium wykryje ID i zrobi UPDATE)
         repo.save(updated_task)  # user_id nie jest potrzebne przy update
 
-        return redirect('task_list')
+        return redirect("task_list")
 
     # GET: Pobierz dane do formularza
     projects = Project.objects.filter(user=request.user)
@@ -215,24 +223,29 @@ def task_edit_view(request, pk):
     goals = Goal.objects.filter(user=request.user)
 
     # Pobierz kandydatów
-    potential_blockers = Task.objects.filter(user=request.user).exclude(status__in=['done', 'cancelled']).exclude(
-        id=task_model.id)
+    potential_blockers = (
+        Task.objects.filter(user=request.user).exclude(status__in=["done", "cancelled"]).exclude(id=task_model.id)
+    )
 
-    return render(request, 'tasks/task_form.html', {
-        'task': task_model,  # Przekazujemy obiekt do wstępnego wypełnienia
-        'projects': projects,
-        'contexts': contexts,
-        'areas': areas,
-        'goals': goals,
-        'potential_blockers': potential_blockers,
-    })
+    return render(
+        request,
+        "tasks/task_form.html",
+        {
+            "task": task_model,  # Przekazujemy obiekt do wstępnego wypełnienia
+            "projects": projects,
+            "contexts": contexts,
+            "areas": areas,
+            "goals": goals,
+            "potential_blockers": potential_blockers,
+        },
+    )
 
 
 @require_http_methods(["POST"])
 @login_required
-def checklist_add_view(request, task_id):
+def checklist_add_view(request: Any, task_id: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=task_id, user=request.user)
-    text = request.POST.get('text')
+    text = request.POST.get("text")
 
     if text:
         ChecklistItem.objects.create(task=task, text=text)
@@ -242,37 +255,36 @@ def checklist_add_view(request, task_id):
     done = task.checklist_items.filter(is_completed=True).count()
     progress = int((done / total) * 100) if total > 0 else 0
 
-    return render(request, 'tasks/partials/checklist.html', {
-        'task': task,
-        'progress': progress
-    })
+    return render(request, "tasks/partials/checklist.html", {"task": task, "progress": progress})
 
 
 @require_http_methods(["POST"])
 @login_required
-def checklist_toggle_view(request, item_id):
+def checklist_toggle_view(request: Any, item_id: int) -> HttpResponse:
     item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
     item.is_completed = not item.is_completed
     item.save()
 
     task = item.task
+    if task is None:
+        return HttpResponse("Błąd", status=400)
 
     # Obliczenie postępu
     total = task.checklist_items.count()
     done = task.checklist_items.filter(is_completed=True).count()
     progress = int((done / total) * 100) if total > 0 else 0
 
-    return render(request, 'tasks/partials/checklist.html', {
-        'task': task,
-        'progress': progress
-    })
+    return render(request, "tasks/partials/checklist.html", {"task": task, "progress": progress})
 
 
 @require_http_methods(["DELETE"])
 @login_required
-def checklist_delete_view(request, item_id):
+def checklist_delete_view(request: Any, item_id: int) -> HttpResponse:
     item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
     task = item.task
+    if task is None:
+        return HttpResponse("Błąd", status=400)
+
     item.delete()
 
     # Obliczenie postępu
@@ -280,33 +292,31 @@ def checklist_delete_view(request, item_id):
     done = task.checklist_items.filter(is_completed=True).count()
     progress = int((done / total) * 100) if total > 0 else 0
 
-    return render(request, 'tasks/partials/checklist.html', {
-        'task': task,
-        'progress': progress
-    })
+    return render(request, "tasks/partials/checklist.html", {"task": task, "progress": progress})
 
 
 @login_required
-def task_detail_hx_view(request, pk):
+def task_detail_hx_view(request: Any, pk: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Pobierz historię aktywności dla tego zadania
     # Używamy ContentType, aby znaleźć logi powiązane z modelem Task
     ct = ContentType.objects.get_for_model(Task)
-    activities = ActivityLog.objects.filter(
-        content_type=ct,
-        object_id=task.id
-    ).order_by('-timestamp')
+    activities = ActivityLog.objects.filter(content_type=ct, object_id=task.id).order_by("-timestamp")
 
-    return render(request, 'tasks/partials/task_detail_sidebar.html', {
-        'task': task,
-        'activities': activities  # <-- Przekazujemy logi
-    })
+    return render(
+        request,
+        "tasks/partials/task_detail_sidebar.html",
+        {
+            "task": task,
+            "activities": activities,  # <-- Przekazujemy logi
+        },
+    )
 
 
 @require_http_methods(["POST"])
 @login_required
-def task_tiny_step_view(request, pk):
+def task_tiny_step_view(request: Any, pk: int) -> HttpResponse:
     """Tworzy 5-minutowe zadanie wstępne i blokuje oryginał."""
     original_task = get_object_or_404(Task, pk=pk, user=request.user)
 
@@ -321,11 +331,11 @@ def task_tiny_step_view(request, pk):
         duration_min=5,
         duration_max=5,
         priority=original_task.priority,
-        status='todo'
+        status="todo",
     )
 
     # Blokujemy oryginał
-    original_task.status = 'blocked'
+    original_task.status = "blocked"
     original_task.blocked_by.add(tiny_task)
     original_task.save()
 
@@ -334,24 +344,24 @@ def task_tiny_step_view(request, pk):
 
 @require_http_methods(["POST"])
 @login_required
-def task_split_view(request, pk):
+def task_split_view(request: Any, pk: int) -> HttpResponse:
     """Zamyka obecne zadanie i tworzy nowe na pozostały czas."""
     original = get_object_or_404(Task, pk=pk, user=request.user)
 
     try:
-        remaining_mins = int(request.POST.get('remaining_minutes'))
-    except (TypeError, ValueError):
+        remaining_mins = int(request.POST.get("remaining_minutes"))
+    except TypeError, ValueError:
         return HttpResponse("Błędny czas", status=400)
 
     if remaining_mins <= 0:
         return HttpResponse("Czas musi być dodatni", status=400)
 
     # 1. Zamknij oryginał
-    original.status = 'done'
+    original.status = "done"
     original.save()
 
     # 2. Utwórz nowe zadanie (Resztę)
-    new_task = Task.objects.create(
+    _new_task = Task.objects.create(
         user=request.user,
         title=f"[Dokończenie] {original.title}",
         description=original.description,  # Kopiujemy opis
@@ -361,12 +371,10 @@ def task_split_view(request, pk):
         priority=original.priority,  # Zachowujemy wysoki priorytet
         energy_required=original.energy_required,
         is_private=original.is_private,
-
         # Nowy czas
         duration_min=remaining_mins,
         duration_max=remaining_mins,
-
-        status='todo'  # Trafi do Schedulera
+        status="todo",  # Trafi do Schedulera
     )
 
     # Odświeżamy widok (zwracamy np. sukces lub przeładowujemy)
@@ -374,13 +382,13 @@ def task_split_view(request, pk):
 
 
 @login_required
-def task_recurrence_view(request, pk):
+def task_recurrence_view(request: Any, pk: int) -> HttpResponse:
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Pobierz lub utwórz (pusty) wzorzec
     pattern = task.recurring_pattern
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = RecurrenceForm(request.POST, instance=pattern)
         if form.is_valid():
             # Jeśli to nowy wzorzec, musimy go utworzyć i przypisać
@@ -395,15 +403,15 @@ def task_recurrence_view(request, pk):
                 pattern = form.save()
 
             # Zapisz dni tygodnia (bo to pole nie jest w modelu bezpośrednio jako M2M, tylko JSON)
-            pattern.week_days = form.cleaned_data['week_days']
+            pattern.week_days = form.cleaned_data["week_days"]
             pattern.save()
 
-            return redirect('task_list')  # lub powrót do zadania
+            return redirect("task_list")  # lub powrót do zadania
     else:
         # Inicjalizacja formularza danymi
         initial = {}
         if pattern:
-            initial['week_days'] = pattern.week_days
+            initial["week_days"] = pattern.week_days
         form = RecurrenceForm(instance=pattern, initial=initial)
 
-    return render(request, 'tasks/recurrence_form.html', {'form': form, 'task': task})
+    return render(request, "tasks/recurrence_form.html", {"form": form, "task": task})

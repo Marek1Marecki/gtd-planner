@@ -1,6 +1,6 @@
 # apps/notes/models.py
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Note(models.Model):
@@ -10,20 +10,12 @@ class Note(models.Model):
 
     # Powiązania (Opcjonalne)
     project = models.ForeignKey(
-        'projects.Project',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='notes'
+        "projects.Project", null=True, blank=True, on_delete=models.SET_NULL, related_name="notes"
     )
-    task = models.ForeignKey(
-        'tasks.Task',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='notes'
-    )
+    task = models.ForeignKey("tasks.Task", null=True, blank=True, on_delete=models.SET_NULL, related_name="notes")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title

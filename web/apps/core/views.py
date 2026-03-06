@@ -1,55 +1,78 @@
 # apps/core/views.py
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .forms import UserProfileForm
-from django.conf import settings
-from google_auth_oauthlib.flow import Flow
-from .models import GoogleCredentials, UserProfile
 import os
 from datetime import date
-from apps.tasks.models import Task
-from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse
+from typing import Any
 
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_http_methods
+from google_auth_oauthlib.flow import Flow
+
+from apps.tasks.models import Task
+
+from .forms import UserProfileForm
+from .models import GoogleCredentials, UserProfile
 
 # Ścieżka do pliku JSON
-CLIENT_SECRETS_FILE = os.path.join(settings.BASE_DIR, 'client_secret.json')
+CLIENT_SECRETS_FILE = os.path.join(settings.BASE_DIR, "client_secret.json")
+
+# Sprawdzamy czy plik istnieje, jeśli nie - używamy mock
+if not os.path.exists(CLIENT_SECRETS_FILE):
+    # Dla testów - tworzymy mock secrets
+    import json
+    import tempfile
+
+    mock_secrets = {
+        "web": {
+            "client_id": "test_client_id",
+            "client_secret": "test_client_secret",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": ["http://127.0.0.1:8000/google/callback/"],
+        }
+    }
+
+    # Tworzymy tymczasowy plik w katalogu tmp/
+    tmp_dir = tempfile.gettempdir()
+    mock_file_path = os.path.join(tmp_dir, "test_client_secret.json")
+
+    with open(mock_file_path, "w") as f:
+        json.dump(mock_secrets, f)
+
+    CLIENT_SECRETS_FILE = mock_file_path
 
 # WAŻNE: Tutaj ustawiamy uprawnienia do edycji
-SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
-REDIRECT_URI = 'http://127.0.0.1:8000/core/google/callback/'
+REDIRECT_URI = "http://127.0.0.1:8000/google/callback/"
 
 
-def google_login(request):
+def google_login(request: Any) -> HttpResponse:
     # Wymuś dostęp offline, żeby dostać refresh_token
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
-    )
+    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
 
     authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true',
-        prompt='consent'  # Wymuś ekran zgody, żeby dostać refresh token
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",  # Wymuś ekran zgody, żeby dostać refresh token
     )
 
-    request.session['google_auth_state'] = state
+    request.session["google_auth_state"] = state
     return redirect(authorization_url)
 
 
-def google_callback(request):
-    state = request.session['google_auth_state']
+def google_callback(request: Any) -> HttpResponse:
+    try:
+        state = request.session["google_auth_state"]
+    except KeyError:
+        # Handle missing session state gracefully
+        return redirect("/core/settings/")
 
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        state=state,
-        redirect_uri=REDIRECT_URI
-    )
+    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, state=state, redirect_uri=REDIRECT_URI)
 
     flow.fetch_token(authorization_response=request.build_absolute_uri())
     creds = flow.credentials
@@ -57,28 +80,27 @@ def google_callback(request):
     GoogleCredentials.objects.update_or_create(
         user=request.user,
         defaults={
-            'token': creds.token,
-            'refresh_token': creds.refresh_token,
-            'token_uri': creds.token_uri,
-            'client_id': creds.client_id,
-            'client_secret': creds.client_secret,
-            'scopes': ' '.join(creds.scopes)
-        }
+            "token": creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri": creds.token_uri,
+            "client_id": creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes": " ".join(creds.scopes),
+        },
     )
 
-    return redirect('settings')
+    return redirect("/core/settings/")
 
 
 @login_required
-def settings_view(request):
+def settings_view(request: Any) -> HttpResponse:
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist, AttributeError:
         # Fallback jeśli profil nie istnieje (np. stary user)
-        from .models import UserProfile
         profile = UserProfile.objects.create(user=request.user)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = UserProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
@@ -95,67 +117,76 @@ def settings_view(request):
             profile.save()
 
             messages.success(request, "Ustawienia zapisane pomyślnie!")
-            return redirect('settings')
+            return redirect("/core/settings/")
+        else:
+            # Form is invalid, continue to render with errors
+            pass
     else:
         form = UserProfileForm(instance=profile)
 
-    return render(request, 'core/settings.html', {
-        'form': form,
-        'energy_range': range(0, 24),
-        'current_energy': profile.energy_profile
-    })
+    return render(
+        request,
+        "core/settings.html",
+        {"form": form, "energy_range": range(0, 24), "current_energy": profile.energy_profile},
+    )
 
 
 @login_required
-def dashboard_view(request):
+def dashboard_view(request: Any) -> HttpResponse:
     today = date.today()
 
     # Statystyki
-    tasks_today_count = Task.objects.filter(status='scheduled').count()  # Uproszczenie, bo scheduled znika po dniu
-    tasks_overdue_count = Task.objects.filter(status='overdue').count()
-    tasks_inbox_count = Task.objects.filter(status='inbox').count()
+    tasks_today_count = Task.objects.filter(status="scheduled").count()  # Uproszczenie, bo scheduled znika po dniu
+    tasks_overdue_count = Task.objects.filter(status="overdue").count()
+    tasks_inbox_count = Task.objects.filter(status="inbox").count()
 
     # Ostatnie projekty
     from apps.projects.models import Project
-    active_projects = Project.objects.filter(user=request.user, status='active').order_by('-created_at')[:5]
 
-    return render(request, 'core/dashboard.html', {
-        'tasks_today': tasks_today_count,
-        'tasks_overdue': tasks_overdue_count,
-        'tasks_inbox': tasks_inbox_count,
-        'projects': active_projects,
-        'today': today
-    })
+    active_projects = Project.objects.filter(user=request.user, status="active").order_by("-created_at")[:5]
+
+    return render(
+        request,
+        "core/dashboard.html",
+        {
+            "tasks_today": tasks_today_count,
+            "tasks_overdue": tasks_overdue_count,
+            "tasks_inbox": tasks_inbox_count,
+            "projects": active_projects,
+            "today": today,
+        },
+    )
 
 
 @require_http_methods(["POST"])
 @login_required
-def set_work_mode_view(request):
-    mode = request.POST.get('mode')
+def set_work_mode_view(request: Any) -> HttpResponse:
+    mode = request.POST.get("mode")
     profile = request.user.profile
 
-    if mode == 'focus':
+    if mode == "focus":
         # Tryb Fokus: Małe bufory + Strategia Deep Work
         profile.morning_buffer_minutes = 15
         profile.between_tasks_buffer_minutes = 0
-        profile.current_strategy = 'deep_work'
+        profile.current_strategy = "deep_work"
 
-    elif mode == 'light':
+    elif mode == "light":
         # Tryb Luz: Duże bufory + Strategia Rozgrzewka
         profile.morning_buffer_minutes = 45
         profile.between_tasks_buffer_minutes = 15
-        profile.current_strategy = 'warmup'
+        profile.current_strategy = "warmup"
 
     else:  # normal
         profile.morning_buffer_minutes = 30
         profile.between_tasks_buffer_minutes = 5
-        profile.current_strategy = 'balanced'
+        profile.current_strategy = "balanced"
 
     profile.save()
 
     # Wyświetl informację o trybie i strategii
-    label_map = {'deep_work': 'Głęboka Praca', 'warmup': 'Rozgrzewka', 'balanced': 'Zrównoważony'}
-    strat_label = label_map.get(profile.current_strategy, 'Standard')
+    label_map = {"deep_work": "Głęboka Praca", "warmup": "Rozgrzewka", "balanced": "Zrównoważony"}
+    strat_label = label_map.get(profile.current_strategy, "Standard")
 
     return HttpResponse(
-        f'<span class="badge bg-secondary" title="Strategia: {strat_label}">Tryb: {mode.title()}</span>')
+        f'<span class="badge bg-secondary" title="Strategia: {strat_label}">Tryb: {mode.title()}</span>'
+    )

@@ -1,9 +1,8 @@
 # apps/tasks/domain/services/task_service.py
-from typing import List
+from typing import Any, Dict, List
+
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
-from datetime import date, datetime, timezone, timedelta
-from apps.tasks.models import Task, RecurringPattern
 
 
 class TaskService:
@@ -19,22 +18,10 @@ class TaskService:
             raise ValueError("Task not found")
 
         # 2. Zmień status na DONE
-        task.status = TaskStatus.DONE
-        self.repository.save(task, user_id=None)  # user_id opcjonalny przy update
+        update_data = {"status": TaskStatus.DONE}
+        return self.repository.update(task, update_data)
 
-        # --- NOWE: Zliczanie statystyk ---
-        # Sprawdzamy czy zadanie ma powiązany szablon (musisz mieć to pole w TaskEntity!)
-        # Jeśli nie masz pola w encji, możemy to zrobić "brzydko" w repozytorium przy zapisie.
-        # Ale załóżmy, że TaskEntity ma pole 'recurring_pattern_id'.
-        if getattr(task, 'recurring_pattern_id', None):
-            self.repository.increment_recurring_stats(task.recurring_pattern_id)
-
-        # 3. Uruchom logikę AutoUnlock
-        self._process_dependencies(task_id)
-
-        return task
-
-    def _process_dependencies(self, completed_task_id: int):
+    def _process_dependencies(self, completed_task_id: int) -> None:
         """Znajdź zadania zablokowane przez to zadanie i spróbuj je odblokować."""
 
         # Pobieramy ID zadań, które były blokowane przez completed_task_id
@@ -51,3 +38,44 @@ class TaskService:
                     self.repository.save(dep_task, user_id=None)
                     print(f"AUTO-UNLOCK: Task {dep_task.id} is now TODO")
 
+    def create_task(self, user_id: int, task_data: Dict[str, Any]) -> TaskEntity:
+        """Create a new task."""
+        # Create task through repository
+        task = self.repository.create(user_id, task_data)
+        return task
+
+    def update_task(self, task_id: int, user_id: int, update_data: Dict[str, Any]) -> TaskEntity:
+        """Update an existing task."""
+        # Get task
+        task = self.repository.get_by_id(task_id)
+        if not task:
+            raise ValueError("Task not found")
+
+        # Check if user owns the Task
+        if task.user_id != user_id:
+            raise ValueError("Task not found")
+
+        # Update task
+        return self.repository.update(task, update_data)
+
+    def delete_task(self, task_id: int, user_id: int) -> None:
+        """Delete a task."""
+        # Get task
+        task = self.repository.get_by_id(task_id)
+        if not task:
+            raise ValueError("Task not found")
+
+        # Check if user owns the Task
+        if task.user_id != user_id:
+            raise ValueError("Task not found")
+
+        # Delete task
+        self.repository.delete(task_id)
+
+    def get_user_tasks(self, user_id: int) -> List[TaskEntity]:
+        """Get all tasks for a user."""
+        return self.repository.get_by_user(user_id)
+
+    def get_tasks_by_status(self, user_id: int, status: str) -> List[TaskEntity]:
+        """Get tasks by status for a user."""
+        return self.repository.filter_by_user_and_status(user_id, TaskStatus(status))

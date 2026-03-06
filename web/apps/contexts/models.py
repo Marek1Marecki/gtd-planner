@@ -1,6 +1,6 @@
 # apps/contexts/models.py
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Context(models.Model):
@@ -11,7 +11,7 @@ class Context(models.Model):
 
     is_active = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -20,5 +20,5 @@ class Tag(models.Model):
     name = models.CharField(max_length=50)  # np. #pilne, #telefon
     color = models.CharField(max_length=7, default="#17a2b8")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name

@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -28,15 +27,11 @@ class Migration(migrations.Migration):
                 ("date", models.DateTimeField(auto_now_add=True)),
                 (
                     "reflection",
-                    models.TextField(
-                        blank=True, verbose_name="Refleksja (Co poszło dobrze/źle?)"
-                    ),
+                    models.TextField(blank=True, verbose_name="Refleksja (Co poszło dobrze/źle?)"),
                 ),
                 (
                     "next_week_priorities",
-                    models.TextField(
-                        blank=True, verbose_name="Priorytety na kolejny tydzień"
-                    ),
+                    models.TextField(blank=True, verbose_name="Priorytety na kolejny tydzień"),
                 ),
                 (
                     "user",

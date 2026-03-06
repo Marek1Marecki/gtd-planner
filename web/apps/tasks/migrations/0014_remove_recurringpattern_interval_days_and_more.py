@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0013_recurringpattern_completed_count_and_more"),
     ]
@@ -40,23 +39,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="recurringpattern",
             name="interval",
-            field=models.PositiveIntegerField(
-                default=1, help_text="Co ile? (np. co 2 tygodnie)"
-            ),
+            field=models.PositiveIntegerField(default=1, help_text="Co ile? (np. co 2 tygodnie)"),
         ),
         migrations.AddField(
             model_name="recurringpattern",
             name="is_dynamic",
-            field=models.BooleanField(
-                default=False, help_text="Czy generować po wykonaniu poprzedniego?"
-            ),
+            field=models.BooleanField(default=False, help_text="Czy generować po wykonaniu poprzedniego?"),
         ),
         migrations.AddField(
             model_name="recurringpattern",
             name="max_occurrences",
-            field=models.PositiveIntegerField(
-                blank=True, help_text="Zakończ po X wystąpieniach", null=True
-            ),
+            field=models.PositiveIntegerField(blank=True, help_text="Zakończ po X wystąpieniach", null=True),
         ),
         migrations.AddField(
             model_name="recurringpattern",

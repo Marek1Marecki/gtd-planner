@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0002_googlecredentials"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="userprofile",
             name="wip_limit",
-            field=models.PositiveIntegerField(
-                default=5, help_text="Maksymalna liczba zadań w toku"
-            ),
+            field=models.PositiveIntegerField(default=5, help_text="Maksymalna liczba zadań w toku"),
         ),
     ]

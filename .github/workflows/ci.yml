@@ -1,0 +1,62 @@
+name: Contract Enforcement (v1.7)
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Validate Lockfile Synchronization
+        run: uv lock --check
+
+      - name: Install Dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Quality Check (Lint + Type + Unit Tests)
+        run: |
+          # Przekazujemy atrapy środowiska, aby Django/Mypy mogły ruszyć
+          export PYTHONPATH=web
+          export DATABASE_URL=postgres://u:p@localhost:5432/db
+          export SECRET_KEY=ci-testing-key
+          make check
+
+  security-gate:
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t gtd-planner:latest .
+
+      - name: Tier 2: Run Vulnerability Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'gtd-planner:latest'
+          format: 'table'
+          exit-code: '1' # Przerwij pipeline jeśli znajdziesz błędy
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Tier 2: Run Runtime Integrity Test
+        run: |
+          # Wykonujemy ten sam test negatywny co w Makefile
+          docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/tmp/test', 'w').write('ok')"
+          if docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/app/test', 'w')" 2>&1 | grep -q "Read-only"; then
+            echo "✅ /app is correctly protected"
+          else
+            echo "❌ SECURITY BREACH: /app is writable!"
+            exit 1
+          fi

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tasks", "0005_recurringpattern_task_recurring_pattern"),
     ]
@@ -13,8 +12,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="task",
             name="review_date",
-            field=models.DateField(
-                blank=True, help_text="Kiedy przypomnieć o tym zadaniu?", null=True
-            ),
+            field=models.DateField(blank=True, help_text="Kiedy przypomnieć o tym zadaniu?", null=True),
         ),
     ]

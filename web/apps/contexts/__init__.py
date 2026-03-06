@@ -1,1 +1,1 @@
-default_app_config = 'apps.contexts.apps.ContextsConfig'
+default_app_config = "apps.contexts.apps.ContextsConfig"

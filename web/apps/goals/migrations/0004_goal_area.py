@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("areas", "0001_initial"),
         ("goals", "0003_goal_parent"),

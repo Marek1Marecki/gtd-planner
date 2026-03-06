@@ -1,7 +1,7 @@
 # apps/projects/domain/entities.py
 from dataclasses import dataclass
-from typing import Optional, List
 from datetime import date
+from typing import Optional
 
 
 @dataclass
