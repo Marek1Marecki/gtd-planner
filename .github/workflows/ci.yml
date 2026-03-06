@@ -64,3 +64,31 @@ jobs:
           export DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
           
           make check
+
+  security-gate:
+    needs: quality-gate # To zadanie ruszy tylko jeśli testy przejdą
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t gtd-planner:latest .
+
+      - name: Tier 2 Run Vulnerability Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'gtd-planner:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Tier 2 Run Runtime Integrity Test
+        run: |
+          docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/tmp/test', 'w').write('ok')"
+          if docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/app/test', 'w')" 2>&1 | grep -q "Read-only"; then
+            echo "✅ /app is correctly protected"
+          else
+            echo "❌ SECURITY BREACH: /app is writable!"
+            exit 1
+          fi
