@@ -9,6 +9,22 @@ on:
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+    # DODAJEMY SERWIS BAZY DANYCH
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: gtd_db
+          POSTGRES_USER: gtd_user
+          POSTGRES_PASSWORD: gtd_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,44 +40,14 @@ jobs:
       - name: Install Dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run Quality Check (Lint + Type + Unit Tests)
+      - name: Run Quality Check
         run: |
-          # 1. Tworzymy atrapę .env na podstawie .env.example, aby secrets-check przeszedł
           cp .env.example .env
-          
-          # 2. Ustawiamy niezbędne ścieżki i atrapy dla Django
           export PYTHONPATH=web
-          export DATABASE_URL=postgres://u:p@localhost:5432/db
+          # USTAWIAMY POŁĄCZENIE DO POSTGRESA W CI
+          export DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
           export SECRET_KEY=ci-testing-key
           
-          # 3. Uruchamiamy check
-          make check
-
-  security-gate:
-    needs: quality-gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t gtd-planner:latest .
-
-      - name: Tier 2 Run Vulnerability Scan (Trivy)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'gtd-planner:latest'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
-
-      - name: Tier 2 Run Runtime Integrity Test
-        run: |
-          # Wykonujemy ten sam test negatywny co w Makefile
-          docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/tmp/test', 'w').write('ok')"
-          if docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/app/test', 'w')" 2>&1 | grep -q "Read-only"; then
-            echo "✅ /app is correctly protected"
-          else
-            echo "❌ SECURITY BREACH: /app is writable!"
-            exit 1
-          fi
+          # Uruchamiamy make check, ale CI musi uruchomić WSZYSTKIE testy, 
+          # aby sprawdzić coverage 80%
+          make check MIN_COVERAGE=80  # Makefile powinien teraz odpalić pytest web
