@@ -26,10 +26,15 @@ jobs:
 
       - name: Run Quality Check (Lint + Type + Unit Tests)
         run: |
-          # Przekazujemy atrapy środowiska, aby Django/Mypy mogły ruszyć
+          # 1. Tworzymy atrapę .env na podstawie .env.example, aby secrets-check przeszedł
+          cp .env.example .env
+          
+          # 2. Ustawiamy niezbędne ścieżki i atrapy dla Django
           export PYTHONPATH=web
           export DATABASE_URL=postgres://u:p@localhost:5432/db
           export SECRET_KEY=ci-testing-key
+          
+          # 3. Uruchamiamy check
           make check
 
   security-gate:
