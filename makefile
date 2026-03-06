@@ -168,3 +168,15 @@ lock:
 
 tree:
 	uv tree
+
+# ===============================
+# DOCUMENTATION (SPHINX)
+# ===============================
+.PHONY: docs-clean docs-html
+
+docs-clean:
+	rm -rf docs_sphinx/build/*
+
+docs-html:
+	@echo "Generowanie dokumentacji Sphinx..."
+	PYTHONPATH=web uv run sphinx-build -b html docs_sphinx/source docs_sphinx/build/html

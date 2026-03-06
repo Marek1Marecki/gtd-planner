@@ -37,8 +37,6 @@ dependencies = [
     "whitenoise>=6.6.0",
     # Environment
     "python-dotenv>=1.0.0",
-    "types-python-dateutil[dev]>=2.9.0.20260302",
-    "types-pytz[dev]>=2026.1.1.20260304",
 ]
 
 [project.optional-dependencies]
@@ -46,17 +44,20 @@ dev = [
     "pytest>=8.0.0",
     "pytest-django>=4.7.0",
     "pytest-cov>=4.0.0",
-    "ruff>=0.5.0",
-    "mypy>=1.8.0",
+    "ruff>=0.15.2",
+    "mypy>=1.19.1",
     "django-stubs>=5.0.0",
-    "pre-commit>=3.6.0",
-    "ipython>=8.20.0",
+    "pre-commit>=4.0.0",
+    "ipython>=9.0.0",
+    "types-python-dateutil>=2.9.0.20260302",
+    "types-pytz>=2026.1.1.20260304",
 ]
 
 [dependency-groups]
 dev = [
-    "mkdocs-material>=9.7.4",
-    "mkdocstrings[python]>=1.0.3",
+    "sphinx>=9.1.0",
+    "sphinx-autodoc-typehints>=3.9.7",
+    "sphinx-rtd-theme>=3.1.0",
 ]
 
 [tool.ruff]
@@ -64,31 +65,30 @@ line-length = 120
 target-version = "py314"
 
 [tool.ruff.lint]
-# Select: Łączymy Twoje kody z nowymi (D, UP, TID)
+# Zestaw reguł Contract v1.8: Logika + Styl + Dokumentacja + Nowoczesna składnia
 select = [
-    "E",   # Error (podstawowe błędy)
-    "F",   # Pyflakes (logika)
-    "W",   # Warning (styl)
-    "I",   # Isort (sortowanie importów)
-    "B",   # Bugbear (częste błędy logiczne)
-    "C4",  # Comprehensions (lepsze listy/słowniki)
-    "UP",  # Pyupgrade (wymuszanie nowoczesnej składni Pythona 3.14)
-    "D",   # Pydocstyle (dokumentacja w kodzie)
-    "TID", # Tidy Imports (blokowanie niepoprawnych kierunków importów)
+    "E",   # Error
+    "F",   # Pyflakes
+    "W",   # Warning
+    "I",   # Isort
+    "B",   # Bugbear
+    "C4",  # Comprehensions
+    "UP",  # Pyupgrade (Python 3.14)
+    "D",   # Pydocstyle (Google Style Docstrings)
+    "TID", # Tidy Imports (Layer Direction)
 ]
 ignore = []
 
 [tool.ruff.lint.pydocstyle]
-# Wybieramy konwencję Google dla docstringów
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-# Tutaj dzieje się magia: pilnujemy dokumentacji tylko tam, gdzie to ważne
-"web/apps/*/domain/**" = []            # W domenie D jest obowiązkowe
-"web/apps/*/application/**" = []       # W aplikacji D jest obowiązkowe
+# Wymuszamy dokumentację w rdzeniu aplikacji
+"web/apps/*/domain/**" = []
+"web/apps/*/application/**" = []
 "web/apps/*/adapters/**" = []
 "web/apps/*/ports/**" = []
-# Wszędzie indziej wyłączamy wymóg docstringów (D), aby nie spowalniać pracy
+# Ignorujemy dokumentację w infrastrukturze i testach dla szybkości deweloperskiej
 "web/apps/*/tests/**" = ["D"]
 "web/apps/*/migrations/**" = ["D"]
 "web/apps/*/views.py" = []
@@ -107,30 +107,23 @@ python_version = "3.14"
 strict = true
 ignore_missing_imports = true
 plugins = ["mypy_django_plugin.main"]
-# TO JEST KLUCZOWA ZMIANA:
 mypy_path = "web"
 
 [tool.django-stubs]
 django_settings_module = "gtd_calendar.settings"
 
 [tool.pytest.ini_options]
-# Ścieżka do ustawień Django
 DJANGO_SETTINGS_MODULE = "gtd_calendar.settings"
-# Szukamy testów wyłącznie w katalogu web/
 testpaths = ["web"]
-# Formaty plików testowych
 python_files = ["test_*.py", "*_test.py"]
-# Opcje uruchamiania: rygor markerów, krótkie tracebacki, szczegółowe nazwy testów
 addopts = [
     "--strict-markers",
     "--verbose",
     "--tb=short",
 ]
-# Definicja jedynego dopuszczalnego markera "ciężkiego"
 markers = [
     "integration: testy wolne, wymagające bazy danych lub dostępu do API",
 ]
-# Wyciszenie szumu informacyjnego o naive datetime
 filterwarnings = [
     "ignore:DateTimeField .* received a naive datetime:RuntimeWarning",
 ]

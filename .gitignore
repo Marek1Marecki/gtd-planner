@@ -51,14 +51,20 @@ token.json
 Thumbs.db
 *:Zone.Identifier
 
-# Testing & Coverage
+# Documentation (Sphinx)
+# Ignorujemy tylko wygenerowane pliki, zostawiamy źródła
+docs_sphinx/build/
+
+# Narzędzia jakości (Caches)
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
-.pytest_cache/
+coverage.xml
 .tox/
 .hypothesis/
-coverage.xml
 
 # mypy
 .mypy_cache/
