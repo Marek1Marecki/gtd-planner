@@ -1,1 +1,1 @@
-# Create your models here.
+"""Calendar application models."""

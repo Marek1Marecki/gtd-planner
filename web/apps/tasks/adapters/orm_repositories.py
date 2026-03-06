@@ -1,5 +1,7 @@
+"""Django ORM repository implementation for tasks."""
+
 # apps/tasks/adapters/orm_repositories.py
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.models import Task as TaskModel
@@ -7,9 +9,10 @@ from apps.tasks.ports.repositories import ITaskRepository
 
 
 class DjangoTaskRepository(ITaskRepository):
+    """Django ORM implementation of task repository."""
+
     def to_entity(self, model: TaskModel) -> TaskEntity:
         """Konwertuje Model Django -> Czystą Encję."""
-
         # Logika pobierania deadline'u celu
         goal_deadline = None
         if model.project and model.project.goal and model.project.goal.deadline:
@@ -65,7 +68,8 @@ class DjangoTaskRepository(ITaskRepository):
             created_at=model.created_at,
         )
 
-    def get_by_id(self, task_id: int) -> Optional[TaskEntity]:
+    def get_by_id(self, task_id: int) -> TaskEntity | None:
+        """Retrieve a task by its ID."""
         try:
             task = TaskModel.objects.get(id=task_id)
             return self.to_entity(task)
@@ -73,6 +77,7 @@ class DjangoTaskRepository(ITaskRepository):
             return None
 
     def save(self, task: TaskEntity, user_id: int | None = None) -> TaskEntity:
+        """Save a task entity to database."""
         data = {
             "title": task.title,
             "description": task.description,
@@ -116,11 +121,13 @@ class DjangoTaskRepository(ITaskRepository):
 
         return self.to_entity(obj)
 
-    def filter_by_status(self, status: TaskStatus) -> List[TaskEntity]:
+    def filter_by_status(self, status: TaskStatus) -> list[TaskEntity]:
+        """Filter tasks by their status."""
         qs = TaskModel.objects.filter(status=status.value)
         return [self.to_entity(t) for t in qs]
 
-    def get_active_tasks(self) -> List[TaskEntity]:
+    def get_active_tasks(self) -> list[TaskEntity]:
+        """Get all active tasks (TODO or SCHEDULED)."""
         # Active = To Do lub Scheduled
         # Dodajemy select_related('area'), żeby Django pobrało dane obszaru w jednym zapytaniu JOIN
         qs = TaskModel.objects.filter(status__in=[TaskStatus.TODO.value, TaskStatus.SCHEDULED.value]).select_related(
@@ -129,14 +136,15 @@ class DjangoTaskRepository(ITaskRepository):
 
         return [self.to_entity(t) for t in qs]
 
-    def get_dependent_tasks(self, blocker_id: int) -> List[TaskEntity]:
+    def get_dependent_tasks(self, blocker_id: int) -> list[TaskEntity]:
+        """Get tasks that are blocked by a specific task."""
         # Szukamy zadań, które mają w polu 'blocked_by' nasze zadanie (blocker_id)
         qs = TaskModel.objects.filter(blocked_by__id=blocker_id)
         return [self.to_entity(t) for t in qs]
 
     def has_active_blockers(self, task_id: int | None) -> bool:
-        """
-        Sprawdza, czy zadanie o podanym ID ma aktywne blokery.
+        """Sprawdza, czy zadanie o podanym ID ma aktywne blokery.
+
         Aktywny bloker to zadanie, które NIE ma statusu DONE ani CANCELLED.
         """
         if task_id is None:
@@ -155,6 +163,7 @@ class DjangoTaskRepository(ITaskRepository):
             return False
 
     def increment_recurring_stats(self, pattern_id: int | None) -> None:
+        """Increment recurring pattern statistics."""
         from django.db.models import F
 
         from apps.tasks.models import RecurringPattern
@@ -162,12 +171,12 @@ class DjangoTaskRepository(ITaskRepository):
         if pattern_id is not None:
             RecurringPattern.objects.filter(id=pattern_id).update(completed_count=F("completed_count") + 1)
 
-    def create(self, user_id: int, task_data: Dict[str, Any]) -> TaskEntity:
+    def create(self, user_id: int, task_data: dict[str, Any]) -> TaskEntity:
         """Create a new task."""
         task = TaskModel.objects.create(user_id=user_id, **task_data)
         return self.to_entity(task)
 
-    def update(self, task: TaskEntity, update_data: Dict[str, Any]) -> TaskEntity:
+    def update(self, task: TaskEntity, update_data: dict[str, Any]) -> TaskEntity:
         """Update an existing task."""
         if task.id is None:
             raise ValueError("Cannot update task without ID")
@@ -179,12 +188,12 @@ class DjangoTaskRepository(ITaskRepository):
         """Delete a task."""
         TaskModel.objects.filter(id=task_id).delete()
 
-    def get_by_user(self, user_id: int) -> List[TaskEntity]:
+    def get_by_user(self, user_id: int) -> list[TaskEntity]:
         """Get all tasks for a user."""
         qs = TaskModel.objects.filter(user_id=user_id).select_related("area", "project__goal")
         return [self.to_entity(t) for t in qs]
 
-    def filter_by_user_and_status(self, user_id: int, status: TaskStatus) -> List[TaskEntity]:
+    def filter_by_user_and_status(self, user_id: int, status: TaskStatus) -> list[TaskEntity]:
         """Filter tasks by user and status."""
         qs = TaskModel.objects.filter(user_id=user_id, status=status.value).select_related("area", "project__goal")
         return [self.to_entity(t) for t in qs]

@@ -1,7 +1,10 @@
+"""Calendar domain services for scheduling and time management."""
+
 # apps/calendar_app/domain/services.py
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Any, List, Sequence
+from typing import Any
 
 from apps.calendar_app.ports.calendar_provider import FixedEvent
 from apps.core.models import UserProfile
@@ -11,6 +14,8 @@ from apps.tasks.domain.services import TaskScorer
 
 @dataclass
 class ScheduledItem:
+    """Represents a scheduled task with time bounds."""
+
     task: TaskEntity
     start: datetime
     end: datetime
@@ -18,25 +23,29 @@ class ScheduledItem:
 
 @dataclass
 class FreeWindow:
+    """Represents a free time window for scheduling."""
+
     start: datetime
     end: datetime
     is_work: bool
 
     @property
     def duration_minutes(self) -> int:
+        """Calculate duration in minutes."""
         return int((self.end - self.start).total_seconds() / 60)
 
 
 class SchedulerService:
+    """Service for scheduling tasks and calculating free time windows."""
+
     def calculate_free_windows(
         self,
         day_date: date,
         fixed_events: Sequence[FixedEvent],
         work_start: time,  # Zmieniamy na wymagane argumenty
         work_end: time,
-    ) -> List[FreeWindow]:
+    ) -> list[FreeWindow]:
         """Dzieli dzień na wolne okna, omijając fixed_events."""
-
         # 1. Sortuj eventy chronologicznie
         fixed_events_list = list(fixed_events)
         fixed_events_list.sort(key=lambda e: e.start_time)
@@ -84,16 +93,15 @@ class SchedulerService:
 
     def schedule_tasks(
         self,
-        tasks: List[TaskEntity],
-        windows: List[FreeWindow],
+        tasks: list[TaskEntity],
+        windows: list[FreeWindow],
         now: datetime,
         user_profile: Any,  # Obiekt UserProfile
-    ) -> List[ScheduledItem]:
-        """
-        Inteligentny algorytm alokacji (Bin Packing) z pełnym scoringiem.
+    ) -> list[ScheduledItem]:
+        """Inteligentny algorytm alokacji (Bin Packing) z pełnym scoringiem.
+
         Uwzględnia: Priorytet, Energię, Ciągłość (Sequence) i Presję Końca Dnia (EOD).
         """
-
         scorer = TaskScorer()
         schedule = []
 
@@ -175,7 +183,7 @@ class SchedulerService:
 
         return schedule
 
-    def get_weekly_plan(self, user: Any, start_date: date, now: datetime) -> List[Any]:
+    def get_weekly_plan(self, user: Any, start_date: date, now: datetime) -> list[Any]:
         """Generuje plan na 7 dni od start_date."""
         from apps.calendar_app.adapters.google_calendar import GoogleCalendarAdapter
         from apps.tasks.adapters.orm_repositories import DjangoTaskRepository

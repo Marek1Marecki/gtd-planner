@@ -1,0 +1,1 @@
+"""Goals adapters package."""

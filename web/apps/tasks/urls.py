@@ -1,3 +1,5 @@
+"""URL configuration for tasks app."""
+
 # apps/tasks/urls.py
 from django.urls import path
 

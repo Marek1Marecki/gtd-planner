@@ -1,0 +1,1 @@
+"""Areas domain entities package."""

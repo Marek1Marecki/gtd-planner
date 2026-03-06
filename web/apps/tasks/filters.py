@@ -1,3 +1,5 @@
+"""Task filters for filtering and searching tasks."""
+
 # apps/tasks/filters.py
 import django_filters
 from django import forms
@@ -9,6 +11,8 @@ from .models import Task
 
 
 class TaskFilter(django_filters.FilterSet):  # type: ignore
+    """FilterSet for filtering tasks."""
+
     title = django_filters.CharFilter(
         lookup_expr="icontains",
         label="Tytuł zawiera",
@@ -43,5 +47,7 @@ class TaskFilter(django_filters.FilterSet):  # type: ignore
     )
 
     class Meta:
+        """Meta configuration for TaskFilter."""
+
         model = Task
         fields = ["project", "is_private"]

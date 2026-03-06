@@ -1,6 +1,8 @@
+"""Calendar views for GTD system scheduling and timeline management."""
+
 # apps/calendar_app/views.py
 import calendar
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from django.contrib.auth.decorators import login_required
@@ -20,7 +22,7 @@ from .adapters.google_calendar import GoogleCalendarAdapter
 
 
 def parse_time_string(time_str: str) -> time:
-    """Konwertuj string 'HH:MM' na datetime.time object"""
+    """Convert 'HH:MM' string to datetime.time object."""
     try:
         hour, minute = map(int, time_str.split(":"))
         return time(hour=hour, minute=minute)
@@ -31,13 +33,10 @@ def parse_time_string(time_str: str) -> time:
 
 @login_required
 def daily_view(request: Any) -> HttpResponse:
-    """
-    Widok Kalendarza z logiką Dual Timeline (Służbowe vs Prywatne).
-    """
-
+    """Display calendar with Dual Timeline logic (Work vs Private)."""
     # 1. Kontekst Czasu
     today = date.today()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # --- NOWE: Lazy Overdue Check (Sprzątanie przed planowaniem) ---
     # Znajdź zadania, które są aktywne, ale ich termin minął (wczoraj lub dawniej)
@@ -183,8 +182,7 @@ def daily_view(request: Any) -> HttpResponse:
 
 @login_required
 def weekly_view(request: Any) -> HttpResponse:
-    """Widok Tygodnia (Pon-Ndz)."""
-
+    """Display weekly calendar view (Monday-Sunday)."""
     # 1. Ustal bazową datę dla tygodnia
     # Jeśli są parametry w URL, użyj ich do ustalenia daty
     try:
@@ -261,8 +259,7 @@ def weekly_view(request: Any) -> HttpResponse:
 
 @login_required
 def monthly_view(request: Any) -> HttpResponse:
-    """Widok Strategiczny Miesiąca."""
-
+    """Display strategic monthly view with goals and projects."""
     # 1. Ustal rok i miesiąc (domyślnie obecny)
     today = date.today()
     try:

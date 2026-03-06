@@ -1,10 +1,15 @@
+"""Project services for CPM calculations and management."""
+
 # apps/projects/services/project_service.py
 from apps.projects.domain.services import CPMNode, CPMService
 from apps.tasks.models import Task
 
 
 class ProjectService:
+    """Service for project management and CPM calculations."""
+
     def recalculate_cpm(self, project_id: int) -> None:
+        """Recalculate Critical Path Method for a project."""
         # 1. Pobierz zadania projektu
         tasks = Task.objects.filter(project_id=project_id, status__in=["todo", "scheduled", "blocked", "inbox"])
         if not tasks:

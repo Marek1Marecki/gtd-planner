@@ -1,3 +1,5 @@
+"""Note views for GTD system note management."""
+
 from typing import Any
 
 from django.contrib.auth.decorators import login_required
@@ -11,18 +13,21 @@ from .models import Note
 
 @login_required
 def note_list_view(request: Any) -> HttpResponse:
+    """Display list of user's notes ordered by update time."""
     notes = Note.objects.filter(user=request.user).order_by("-updated_at")
     return render(request, "notes/note_list.html", {"notes": notes})
 
 
 @login_required
 def note_detail_view(request: Any, pk: int) -> HttpResponse:
+    """Display detailed view of a specific note."""
     note = get_object_or_404(Note, pk=pk, user=request.user)
     return render(request, "notes/note_detail.html", {"note": note})
 
 
 @login_required
 def note_create_view(request: Any) -> HttpResponse:
+    """Create a new note with optional project association."""
     if request.method == "POST":
         title = request.POST.get("title")
         content = request.POST.get("content")

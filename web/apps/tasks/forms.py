@@ -1,3 +1,5 @@
+"""Task forms for creating and editing tasks."""
+
 # apps/tasks/forms.py
 from django import forms
 
@@ -5,6 +7,8 @@ from .models import RecurringPattern
 
 
 class RecurrenceForm(forms.ModelForm):  # type: ignore
+    """Form for creating and editing recurring task patterns."""
+
     # Checkboxy dla dni tygodnia
     DAYS = [
         ("MO", "Poniedziałek"),
@@ -20,6 +24,8 @@ class RecurrenceForm(forms.ModelForm):  # type: ignore
     )
 
     class Meta:
+        """Meta configuration for RecurrenceForm."""
+
         model = RecurringPattern
         fields = ["title", "frequency", "interval", "end_date", "max_occurrences", "is_dynamic"]
         widgets = {

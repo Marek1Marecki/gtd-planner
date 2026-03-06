@@ -1,6 +1,6 @@
 # apps/calendar_app/tests/test_views.py
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
@@ -81,7 +81,7 @@ class CalendarViewsTest(TestCase):
         # Mock fixed events
         mock_event = Mock()
         mock_event.title = "Meeting"
-        mock_event.start_time = datetime.now(timezone.utc)
+        mock_event.start_time = datetime.now(UTC)
         mock_event.end_time = mock_event.start_time + timedelta(hours=1)
 
         with patch("apps.calendar_app.views.GoogleCalendarAdapter") as mock_adapter:
@@ -279,13 +279,13 @@ class CalendarViewsTest(TestCase):
                 # Mock scheduled items
                 mock_scheduled_item = Mock()
                 mock_scheduled_item.task = task_with_area
-                mock_scheduled_item.start = datetime.now(timezone.utc)
-                mock_scheduled_item.end = datetime.now(timezone.utc) + timedelta(hours=1)
+                mock_scheduled_item.start = datetime.now(UTC)
+                mock_scheduled_item.end = datetime.now(UTC) + timedelta(hours=1)
 
                 mock_scheduled_item2 = Mock()
                 mock_scheduled_item2.task = task_without_area
-                mock_scheduled_item2.start = datetime.now(timezone.utc) + timedelta(hours=2)
-                mock_scheduled_item2.end = datetime.now(timezone.utc) + timedelta(hours=3)
+                mock_scheduled_item2.start = datetime.now(UTC) + timedelta(hours=2)
+                mock_scheduled_item2.end = datetime.now(UTC) + timedelta(hours=3)
 
                 mock_scheduler.return_value.calculate_free_windows.return_value = []
                 mock_scheduler.return_value.schedule_tasks.return_value = [mock_scheduled_item, mock_scheduled_item2]
@@ -325,8 +325,8 @@ class CalendarViewsTest(TestCase):
                 # Schedule only one task
                 mock_scheduled_item = Mock()
                 mock_scheduled_item.task = task1
-                mock_scheduled_item.start = datetime.now(timezone.utc)
-                mock_scheduled_item.end = datetime.now(timezone.utc) + timedelta(hours=1)
+                mock_scheduled_item.start = datetime.now(UTC)
+                mock_scheduled_item.end = datetime.now(UTC) + timedelta(hours=1)
 
                 mock_scheduler.return_value.calculate_free_windows.return_value = []
                 mock_scheduler.return_value.schedule_tasks.return_value = [mock_scheduled_item]

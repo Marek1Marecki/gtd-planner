@@ -1,3 +1,5 @@
+"""Goal forms for creating and editing goals."""
+
 from typing import Any
 
 from django import forms
@@ -6,7 +8,11 @@ from .models import Goal
 
 
 class GoalForm(forms.ModelForm):  # type: ignore
+    """Form for creating and editing goals."""
+
     class Meta:
+        """Meta configuration for GoalForm."""
+
         model = Goal
         fields = ["title", "deadline", "motivation", "parent", "area"]
         widgets = {
@@ -17,6 +23,7 @@ class GoalForm(forms.ModelForm):  # type: ignore
         }
 
     def __init__(self, user: Any, *args: Any, **kwargs: Any) -> None:
+        """Initialize form with user filtering."""
         super().__init__(*args, **kwargs)
         # Filtruj cele rodzicielskie tylko do usera (żeby nie widział cudzych)
         self.fields["parent"].queryset = Goal.objects.filter(user=user)  # type: ignore

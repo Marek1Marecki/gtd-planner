@@ -1,3 +1,5 @@
+"""Report views for GTD system analytics and weekly reviews."""
+
 from datetime import date, timedelta
 from typing import Any
 
@@ -21,7 +23,11 @@ from .models import ReviewSession
 # Prosty formularz (można w forms.py, ale tu szybciej dla MVP)
 # Formularz inline (można przenieść do forms.py)
 class ReviewForm(forms.ModelForm):  # type: ignore
+    """Form for creating weekly review sessions."""
+
     class Meta:
+        """Meta options for ReviewForm."""
+
         model = ReviewSession
         fields = ["reflection", "next_week_priorities"]
         widgets = {
@@ -36,9 +42,7 @@ class ReviewForm(forms.ModelForm):  # type: ignore
 
 @login_required
 def stats_api_view(request: Any) -> JsonResponse:
-    """
-    API zwracające dane do wykresów (Activity, Status, Areas).
-    """
+    """API endpoint returning data for charts (Activity, Status, Areas)."""
     service = ReportService()
 
     # 1. Pobierz podstawowe statystyki
@@ -83,6 +87,7 @@ def stats_api_view(request: Any) -> JsonResponse:
 
 @login_required
 def weekly_review_view(request: Any) -> HttpResponse:
+    """Display weekly review dashboard with GTD methodology insights."""
     user = request.user
     today = date.today()
     tickler = TicklerService()

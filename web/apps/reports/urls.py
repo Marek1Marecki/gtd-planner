@@ -1,3 +1,5 @@
+"""URL configuration for reports app."""
+
 # apps/reports/urls.py
 from django.urls import path
 

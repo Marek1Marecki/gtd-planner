@@ -1,10 +1,15 @@
+"""Habit services for tracking and completion."""
+
 from datetime import date, timedelta
 
 from .models import Habit, HabitLog
 
 
 class HabitService:
+    """Service for managing habit completion and streaks."""
+
     def complete_habit(self, habit: Habit, day: date) -> None:
+        """Mark a habit as completed for a specific day."""
         # 1. Sprawdź czy już nie zrobione dzisiaj
         if HabitLog.objects.filter(habit=habit, date=day).exists():
             return  # Już zrobione

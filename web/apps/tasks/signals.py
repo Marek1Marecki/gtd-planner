@@ -1,3 +1,5 @@
+"""Task signals for activity logging and change tracking."""
+
 # apps/tasks/signals.py
 from typing import Any
 
@@ -13,8 +15,8 @@ from .models import Task
 
 @receiver(pre_save, sender=Task)
 def track_task_changes(sender: Any, instance: Any, **kwargs: Any) -> None:
-    """
-    Przed zapisem sprawdzamy stary stan zadania, żeby wykryć zmiany.
+    """Przed zapisem sprawdzamy stary stan zadania, żeby wykryć zmiany.
+
     Zapisujemy to w tymczasowym atrybucie instancji.
     """
     if instance.id:
@@ -29,9 +31,7 @@ def track_task_changes(sender: Any, instance: Any, **kwargs: Any) -> None:
 
 @receiver(post_save, sender=Task)
 def log_task_changes(sender: Any, instance: Any, created: Any, **kwargs: Any) -> None:
-    """
-    Po zapisie sprawdzamy, co się zmieniło i logujemy.
-    """
+    """Po zapisie sprawdzamy, co się zmieniło i logujemy."""
     user = instance.user  # Zakładamy, że user jest w modelu Task
 
     if created:
@@ -91,7 +91,6 @@ def update_goal_progress(sender: Any, instance: Any, **kwargs: Any) -> None:
 @receiver(pre_save, sender=Task)
 def update_ready_since(sender: Any, instance: Any, **kwargs: Any) -> None:
     """Aktualizuje ready_since przy wejściu w status aktywny."""
-
     active_statuses = ["todo", "scheduled"]
     inactive_statuses = ["blocked", "waiting", "delegated", "postponed", "paused", "inbox"]
 
@@ -136,6 +135,7 @@ def track_recurring_completion(sender: Any, instance: Any, created: Any, **kwarg
 
 @receiver(pre_save, sender=Task)
 def set_completed_at(sender: Any, instance: Any, **kwargs: Any) -> None:
+    """Set completed_at timestamp when task status changes to done."""
     # Jeśli status zmienia się na DONE, a data jest pusta -> ustaw teraz
     if instance.status == "done" and not instance.completed_at:
         instance.completed_at = timezone.now()

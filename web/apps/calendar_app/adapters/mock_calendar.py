@@ -1,6 +1,7 @@
+"""Mock calendar provider for testing and development."""
+
 # apps/calendar_app/adapters/mock_calendar.py
 from datetime import date, datetime, time, timedelta
-from typing import List
 
 import pytz
 
@@ -8,7 +9,10 @@ from apps.calendar_app.ports.calendar_provider import FixedEvent, ICalendarProvi
 
 
 class MockCalendarProvider(ICalendarProvider):
-    def get_events(self, user_id: int, day: date) -> List[FixedEvent]:
+    """Mock calendar provider for testing and development."""
+
+    def get_events(self, user_id: int, day: date) -> list[FixedEvent]:
+        """Get calendar events for a specific user and day."""
         # Ustawiamy strefę czasową (ważne w Django!)
         tz = pytz.UTC
 

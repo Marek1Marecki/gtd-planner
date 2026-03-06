@@ -1,10 +1,16 @@
+"""Core forms for user profile management."""
+
 from django import forms
 
 from .models import UserProfile
 
 
 class UserProfileForm(forms.ModelForm):  # type: ignore
+    """Form for editing user profile settings."""
+
     class Meta:
+        """Meta configuration for UserProfileForm."""
+
         model = UserProfile
         fields = [
             "work_start_hour",

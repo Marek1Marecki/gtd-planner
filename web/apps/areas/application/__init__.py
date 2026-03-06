@@ -1,0 +1,1 @@
+"""Areas application services package."""

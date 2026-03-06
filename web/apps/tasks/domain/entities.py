@@ -1,11 +1,14 @@
+"""Task domain entities."""
+
 # apps/tasks/domain/entities.py
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from typing import List, Optional
+from enum import StrEnum
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
+    """Enumeration of possible task statuses."""
+
     INBOX = "inbox"
     TODO = "todo"
     SCHEDULED = "scheduled"
@@ -21,16 +24,18 @@ class TaskStatus(str, Enum):
 
 @dataclass
 class TaskEntity:
-    id: Optional[int]  # ID może być None przed zapisem
+    """Represents a task in the domain layer."""
+
+    id: int | None  # ID może być None przed zapisem
     title: str
     description: str = ""
     status: TaskStatus = TaskStatus.INBOX
-    user_id: Optional[int] = None  # User ownership
+    user_id: int | None = None  # User ownership
 
     # Czas
-    duration_min: Optional[int] = None  # minuty
-    duration_max: Optional[int] = None  # minuty
-    due_date: Optional[datetime] = None
+    duration_min: int | None = None  # minuty
+    duration_max: int | None = None  # minuty
+    due_date: datetime | None = None
     is_fixed_time: bool = False
 
     # Priorytety
@@ -46,18 +51,18 @@ class TaskEntity:
     is_milestone: bool = False
 
     # Relacje (tylko ID, żeby nie wiązać obiektów domenowych z ORM)
-    project_id: Optional[int] = None
-    goal_id: Optional[int] = None
-    context_id: Optional[int] = None
-    area_id: Optional[int] = None
-    area_color: Optional[str] = None
-    goal_deadline: Optional[datetime] = None
-    project_deadline: Optional[datetime] = None
-    ready_since: Optional[datetime] = None
-    recurring_pattern_id: Optional[int] = None
-    blocked_by: List[int] = field(default_factory=list)
+    project_id: int | None = None
+    goal_id: int | None = None
+    context_id: int | None = None
+    area_id: int | None = None
+    area_color: str | None = None
+    goal_deadline: datetime | None = None
+    project_deadline: datetime | None = None
+    ready_since: datetime | None = None
+    recurring_pattern_id: int | None = None
+    blocked_by: list[int] = field(default_factory=list)
 
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
 
     @property
     def duration_expected(self) -> int:
@@ -77,4 +82,5 @@ class TaskEntity:
         return base
 
     def is_active(self) -> bool:
+        """Check if task is in active status."""
         return self.status in [TaskStatus.TODO, TaskStatus.SCHEDULED]

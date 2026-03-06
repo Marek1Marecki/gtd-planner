@@ -1,7 +1,7 @@
 # apps/calendar_app/tests/test_services.py
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -27,8 +27,8 @@ class SchedulerServiceTest(TestCase):
     def test_calculate_free_windows_basic(self) -> None:
         """Test basic free window calculation"""
         today = date.today()
-        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=timezone.utc)
-        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=timezone.utc)
+        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=UTC)
+        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=UTC)
 
         # No fixed events
         fixed_events: Sequence[FixedEvent] = []
@@ -43,17 +43,13 @@ class SchedulerServiceTest(TestCase):
     def test_calculate_free_windows_with_events(self) -> None:
         """Test free window calculation with fixed events"""
         today = date.today()
-        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=timezone.utc)
-        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=timezone.utc)
+        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=UTC)
+        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=UTC)
 
         # Create a fixed event from 10:00 to 12:00
         mock_event = Mock()
-        mock_event.start_time = datetime.combine(today, datetime.min.time()).replace(
-            hour=10, minute=0, tzinfo=timezone.utc
-        )
-        mock_event.end_time = datetime.combine(today, datetime.min.time()).replace(
-            hour=12, minute=0, tzinfo=timezone.utc
-        )
+        mock_event.start_time = datetime.combine(today, datetime.min.time()).replace(hour=10, minute=0, tzinfo=UTC)
+        mock_event.end_time = datetime.combine(today, datetime.min.time()).replace(hour=12, minute=0, tzinfo=UTC)
 
         fixed_events = [mock_event]
 
@@ -69,17 +65,17 @@ class SchedulerServiceTest(TestCase):
     def test_calculate_free_windows_multiple_events(self) -> None:
         """Test free window calculation with multiple events"""
         today = date.today()
-        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=timezone.utc)
-        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=timezone.utc)
+        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=UTC)
+        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=UTC)
 
         # Create multiple fixed events
         event1 = Mock()
-        event1.start_time = datetime.combine(today, datetime.min.time()).replace(hour=10, minute=0, tzinfo=timezone.utc)
-        event1.end_time = datetime.combine(today, datetime.min.time()).replace(hour=11, minute=0, tzinfo=timezone.utc)
+        event1.start_time = datetime.combine(today, datetime.min.time()).replace(hour=10, minute=0, tzinfo=UTC)
+        event1.end_time = datetime.combine(today, datetime.min.time()).replace(hour=11, minute=0, tzinfo=UTC)
 
         event2 = Mock()
-        event2.start_time = datetime.combine(today, datetime.min.time()).replace(hour=14, minute=0, tzinfo=timezone.utc)
-        event2.end_time = datetime.combine(today, datetime.min.time()).replace(hour=15, minute=0, tzinfo=timezone.utc)
+        event2.start_time = datetime.combine(today, datetime.min.time()).replace(hour=14, minute=0, tzinfo=UTC)
+        event2.end_time = datetime.combine(today, datetime.min.time()).replace(hour=15, minute=0, tzinfo=UTC)
 
         fixed_events = [event1, event2]
 
@@ -96,7 +92,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_empty(self) -> None:
         """Test scheduling with no tasks"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create empty windows
         window = FreeWindow(start=now + timedelta(hours=1), end=now + timedelta(hours=3), is_work=True)
@@ -111,7 +107,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_basic(self) -> None:
         """Test basic task scheduling"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create a task and task entity
         task = Task.objects.create(user=self.user, title="Test Task", duration_min=60, priority=3, status="todo")
@@ -141,7 +137,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_priority_ordering(self) -> None:
         """Test tasks are scheduled by priority"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create tasks with different priorities
         low_priority_task = Task.objects.create(
@@ -193,7 +189,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_insufficient_time(self) -> None:
         """Test tasks that don't fit in available windows"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create a task longer than available window
         task = Task.objects.create(
@@ -228,7 +224,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_multiple_windows(self) -> None:
         """Test scheduling across multiple windows"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create tasks
         task1 = Task.objects.create(user=self.user, title="Task 1", duration_min=60, priority=1, status="todo")
@@ -287,7 +283,7 @@ class SchedulerServiceTest(TestCase):
             },
         )
 
-        plan = self.service.get_weekly_plan(self.user, start_of_week, datetime.now(timezone.utc))
+        plan = self.service.get_weekly_plan(self.user, start_of_week, datetime.now(UTC))
 
         # Should return a list with 7 days
         self.assertIsInstance(plan, list)
@@ -324,7 +320,7 @@ class SchedulerServiceTest(TestCase):
                 mock_windows.return_value = []
                 mock_schedule.return_value = []
 
-                self.service.get_weekly_plan(self.user, start_of_week, datetime.now(timezone.utc))
+                self.service.get_weekly_plan(self.user, start_of_week, datetime.now(UTC))
 
                 # Should have called scheduling for each day (2x per day: work + personal)
                 self.assertEqual(mock_windows.call_count, 14)  # 7 days × 2 timelines
@@ -332,7 +328,7 @@ class SchedulerServiceTest(TestCase):
 
     def test_schedule_tasks_with_energy_profile(self) -> None:
         """Test scheduling considers energy profile"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create user profile with energy profile
         from apps.core.models import UserProfile
@@ -401,7 +397,7 @@ class SchedulerServiceTest(TestCase):
     def test_schedule_tasks_with_deadlines(self) -> None:
         """Test scheduling respects task deadlines"""
         today = date.today()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create tasks with different deadlines
         urgent_task = Task.objects.create(
@@ -458,8 +454,8 @@ class SchedulerServiceTest(TestCase):
     def test_calculate_free_windows_edge_cases(self) -> None:
         """Test edge cases in free window calculation"""
         today = date.today()
-        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=timezone.utc)
-        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=timezone.utc)
+        work_start = datetime.combine(today, datetime.min.time()).replace(hour=9, minute=0, tzinfo=UTC)
+        work_end = datetime.combine(today, datetime.min.time()).replace(hour=17, minute=0, tzinfo=UTC)
 
         # Event exactly at work start
         event_at_start = Mock()

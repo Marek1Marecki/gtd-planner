@@ -1,7 +1,7 @@
 # apps/tasks/tests/test_task_scorer_unit.py
 """Unit tests for TaskScorer - pure domain logic without Django dependencies."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from apps.tasks.domain.entities import TaskEntity
 from apps.tasks.domain.services.task_scorer import TaskScorer
@@ -13,7 +13,7 @@ class TestTaskScorerUnit:
     def setup_method(self) -> None:
         """Setup for each test method."""
         self.scorer = TaskScorer()
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(UTC)
 
     def test_calculate_score_basic(self) -> None:
         """Test basic score calculation."""

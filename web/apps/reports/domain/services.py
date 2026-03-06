@@ -1,3 +1,5 @@
+"""Report domain services for analytics and statistics."""
+
 # apps/reports/domain/services.py
 from datetime import timedelta
 from typing import Any
@@ -10,6 +12,8 @@ from apps.tasks.models import Task
 
 
 class ReportService:
+    """Service for generating reports and analytics."""
+
     def get_weekly_stats(self, user: Any) -> dict[str, Any]:
         """Zwraca statystyki z ostatnich 7 dni."""
         now = timezone.now()
@@ -105,7 +109,6 @@ class ReportService:
 
     def get_recurring_health(self, user: Any) -> dict[str, Any]:
         """Zwraca średnie opóźnienie dla zadań cyklicznych."""
-
         from apps.tasks.models import RecurringPattern, Task
 
         patterns = RecurringPattern.objects.filter(user=user, is_active=True)
@@ -173,8 +176,8 @@ class ReportService:
         return {"labels": labels, "data": counts, "colors": colors}
 
     def get_blocking_chains(self, user: Any) -> list[dict[str, Any]]:
-        """
-        Zwraca listę 'łańcuchów': Zadania aktywne, które blokują inne zadania.
+        """Zwraca listę 'łańcuchów': Zadania aktywne, które blokują inne zadania.
+
         Struktura: [{ 'root': task, 'blocked_children': [task, task...] }]
         """
         from apps.tasks.models import Task
@@ -203,8 +206,8 @@ class ReportService:
         return chains
 
     def get_productivity_heatmap(self, user: Any) -> list[int]:
-        """
-        Generuje heatmapę godzinową (0-23) obciążenia pracą.
+        """Generuje heatmapę godzinową (0-23) obciążenia pracą.
+
         Uwzględnia duration i energy zadania (Back-filling).
         """
         from apps.tasks.models import Task

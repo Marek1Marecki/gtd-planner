@@ -1,9 +1,13 @@
+"""Note models for GTD system."""
+
 # apps/notes/models.py
 from django.conf import settings
 from django.db import models
 
 
 class Note(models.Model):
+    """Represents a note that can be linked to projects or tasks."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True, help_text="Markdown supported")
@@ -18,4 +22,5 @@ class Note(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
+        """Return string representation of the note."""
         return self.title

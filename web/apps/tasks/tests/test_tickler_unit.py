@@ -1,7 +1,7 @@
 # apps/tasks/tests/test_tickler_unit.py
 """Unit tests for TicklerService - pure domain logic without Django dependencies."""
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from apps.tasks.domain.services.tickler import TicklerService
@@ -13,7 +13,7 @@ class TestTicklerServiceUnit:
     def setup_method(self) -> None:
         """Setup for each test method."""
         self.service = TicklerService()
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(UTC)
         self.user = Mock()
 
     def test_get_tasks_for_review_basic(self) -> None:
@@ -67,7 +67,7 @@ class TestTicklerServiceUnit:
             # Setup timezone mock
             from django.utils import timezone as django_timezone
 
-            mock_now = datetime.now(timezone.utc)
+            mock_now = datetime.now(UTC)
             with patch.object(django_timezone, "now", return_value=mock_now):
                 mock_task_model.objects.filter.return_value = mock_queryset
 
@@ -92,7 +92,7 @@ class TestTicklerServiceUnit:
             mock_task_model.objects.filter.return_value = mock_queryset
 
             # Call without days parameter (should default to 3)
-            mock_now = datetime.now(timezone.utc)
+            mock_now = datetime.now(UTC)
             from django.utils import timezone as django_timezone
 
             with patch.object(django_timezone, "now", return_value=mock_now):
@@ -114,7 +114,7 @@ class TestTicklerServiceUnit:
             mock_queryset = Mock()
             mock_task_model.objects.filter.return_value = mock_queryset
 
-            mock_now = datetime.now(timezone.utc)
+            mock_now = datetime.now(UTC)
             from django.utils import timezone as django_timezone
 
             with patch.object(django_timezone, "now", return_value=mock_now):

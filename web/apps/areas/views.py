@@ -1,1 +1,1 @@
-# Create your views here.
+"""Area views for GTD system area management."""

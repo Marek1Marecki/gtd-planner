@@ -1,3 +1,5 @@
+"""Task views for GTD system task management and workflow."""
+
 # apps/tasks/views.py
 from typing import Any
 
@@ -116,6 +118,7 @@ def task_create_view(request: Any) -> HttpResponse:
 
 @login_required
 def task_search_view(request: Any) -> HttpResponse:
+    """Display searchable task list with filtering options."""
     # Pobieramy wszystkie zadania użytkownika
     # (Możemy tu dodać .select_related('context', 'project') dla optymalizacji)
     qs = Task.objects.filter(user=request.user).select_related("context", "project").order_by("-created_at")
@@ -128,6 +131,7 @@ def task_search_view(request: Any) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def task_complete_view(request: Any, pk: int) -> HttpResponse:
+    """Mark a task as completed using TaskService."""
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Używamy serwisu (Clean Architecture)
@@ -143,6 +147,7 @@ def task_complete_view(request: Any, pk: int) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def task_force_today_view(request: Any, pk: int) -> HttpResponse:
+    """Force a task to be scheduled for today with high priority."""
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Logika: Ustaw deadline na dziś, status na scheduled, priorytet na max
@@ -157,6 +162,8 @@ def task_force_today_view(request: Any, pk: int) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def task_resume_view(request: Any, pk: int) -> HttpResponse:
+    """Resume a paused task by changing its status to TODO."""
+    task = get_object_or_404(Task, pk=pk, user=request.user)
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     if task.status == "paused":
@@ -170,6 +177,7 @@ def task_resume_view(request: Any, pk: int) -> HttpResponse:
 
 @login_required
 def task_edit_view(request: Any, pk: int) -> HttpResponse:
+    """Edit an existing task with updated details and dependencies."""
     # 1. Pobierz zadanie (zabezpieczenie, że należy do usera)
     task_model = get_object_or_404(Task, pk=pk, user=request.user)
 
@@ -244,6 +252,7 @@ def task_edit_view(request: Any, pk: int) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def checklist_add_view(request: Any, task_id: int) -> HttpResponse:
+    """Add a new checklist item to a task."""
     task = get_object_or_404(Task, pk=task_id, user=request.user)
     text = request.POST.get("text")
 
@@ -261,6 +270,7 @@ def checklist_add_view(request: Any, task_id: int) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def checklist_toggle_view(request: Any, item_id: int) -> HttpResponse:
+    """Toggle completion status of a checklist item."""
     item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
     item.is_completed = not item.is_completed
     item.save()
@@ -280,6 +290,7 @@ def checklist_toggle_view(request: Any, item_id: int) -> HttpResponse:
 @require_http_methods(["DELETE"])
 @login_required
 def checklist_delete_view(request: Any, item_id: int) -> HttpResponse:
+    """Delete a checklist item from a task."""
     item = get_object_or_404(ChecklistItem, pk=item_id, task__user=request.user)
     task = item.task
     if task is None:
@@ -297,6 +308,7 @@ def checklist_delete_view(request: Any, item_id: int) -> HttpResponse:
 
 @login_required
 def task_detail_hx_view(request: Any, pk: int) -> HttpResponse:
+    """Display task details with activity history for HTMX requests."""
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Pobierz historię aktywności dla tego zadania
@@ -383,6 +395,7 @@ def task_split_view(request: Any, pk: int) -> HttpResponse:
 
 @login_required
 def task_recurrence_view(request: Any, pk: int) -> HttpResponse:
+    """Manage recurrence pattern for a task."""
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     # Pobierz lub utwórz (pusty) wzorzec

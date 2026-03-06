@@ -1,1 +1,1 @@
-# Create your models here.
+"""Notification models for GTD system."""

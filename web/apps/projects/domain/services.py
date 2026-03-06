@@ -1,13 +1,16 @@
+"""Project domain services for critical path analysis."""
+
 # apps/projects/domain/services.py
 from dataclasses import dataclass
-from typing import Dict, List
 
 
 @dataclass
 class CPMNode:
+    """Represents a node in Critical Path Method analysis."""
+
     task_id: int
     duration: int
-    dependencies: List[int]  # ID zadań, od których to zadanie zależy (Predecessors)
+    dependencies: list[int]  # ID zadań, od których to zadanie zależy (Predecessors)
 
     # Obliczane wartości
     es: int = 0
@@ -19,9 +22,11 @@ class CPMNode:
 
 
 class CPMService:
-    def calculate_critical_path(self, tasks: List[CPMNode]) -> Dict[int, CPMNode]:
-        """
-        Oblicza ścieżkę krytyczną dla listy węzłów.
+    """Service for Critical Path Method calculations."""
+
+    def calculate_critical_path(self, tasks: list[CPMNode]) -> dict[int, CPMNode]:
+        """Oblicza ścieżkę krytyczną dla listy węzłów.
+
         Zwraca słownik {task_id: node} z wypełnionymi wartościami.
         """
         node_map = {t.task_id: t for t in tasks}
@@ -68,7 +73,7 @@ class CPMService:
         processed = set()
 
         # Budowa mapy odwrotnej (Successors) dla łatwiejszego przeszukiwania
-        successors: Dict[int, List[int]] = {tid: [] for tid in node_map}
+        successors: dict[int, list[int]] = {tid: [] for tid in node_map}
         for node in node_map.values():
             for dep_id in node.dependencies:
                 if dep_id in successors:

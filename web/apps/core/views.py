@@ -1,3 +1,5 @@
+"""Core views for GTD system dashboard and user management."""
+
 # apps/core/views.py
 
 import os
@@ -52,6 +54,7 @@ REDIRECT_URI = "http://127.0.0.1:8000/google/callback/"
 
 
 def google_login(request: Any) -> HttpResponse:
+    """Initiate Google OAuth login flow with offline access."""
     # Wymuś dostęp offline, żeby dostać refresh_token
     flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, redirect_uri=REDIRECT_URI)
 
@@ -66,6 +69,7 @@ def google_login(request: Any) -> HttpResponse:
 
 
 def google_callback(request: Any) -> HttpResponse:
+    """Handle Google OAuth callback and store credentials."""
     try:
         state = request.session["google_auth_state"]
     except KeyError:
@@ -94,6 +98,7 @@ def google_callback(request: Any) -> HttpResponse:
 
 @login_required
 def settings_view(request: Any) -> HttpResponse:
+    """Display and update user profile settings."""
     try:
         profile = request.user.profile
     except UserProfile.DoesNotExist, AttributeError:
@@ -133,6 +138,7 @@ def settings_view(request: Any) -> HttpResponse:
 
 @login_required
 def dashboard_view(request: Any) -> HttpResponse:
+    """Display main dashboard with task statistics and recent projects."""
     today = date.today()
 
     # Statystyki
@@ -161,6 +167,7 @@ def dashboard_view(request: Any) -> HttpResponse:
 @require_http_methods(["POST"])
 @login_required
 def set_work_mode_view(request: Any) -> HttpResponse:
+    """Set user work mode (focus, light, or normal) with appropriate buffers."""
     mode = request.POST.get("mode")
     profile = request.user.profile
 

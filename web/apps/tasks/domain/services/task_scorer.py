@@ -1,12 +1,16 @@
+"""Task scoring services for prioritization."""
+
 # apps/tasks/domain/services/task_scorer.py
-from datetime import date, datetime, timezone
-from typing import Optional
+from datetime import UTC, date, datetime
 
 from apps.tasks.domain.entities import TaskEntity
 
 
 class TaskScorer:
+    """Service for scoring and prioritizing tasks."""
+
     def __init__(self, weights: dict[str, float] | None = None):
+        """Initialize task scorer with custom weights."""
         # Domyślne wagi, jeśli nie podano
         self.weights = weights or {
             "w_priority": 0.4,
@@ -25,11 +29,11 @@ class TaskScorer:
         task: TaskEntity,
         now: datetime,
         slot_energy_level: int = 1,
-        last_project_id: Optional[int] = None,
+        last_project_id: int | None = None,
         sequence_count: int = 0,
-        hours_to_end_of_day: Optional[float] = None,
+        hours_to_end_of_day: float | None = None,
     ) -> float:
-
+        """Calculate priority score for a task."""
         # 1. Normalizacja Priorytetu (skala 1-5 -> 0.0-1.0)
         # priority=1 to najwyższy, więc odwracamy skalę
         norm_priority = (5 - task.priority) / 4.0
@@ -56,13 +60,13 @@ class TaskScorer:
             if isinstance(task.due_date, date) and not isinstance(task.due_date, datetime):
                 task_due = datetime.combine(task.due_date, datetime.min.time())
                 if now.tzinfo:
-                    task_due = task_due.replace(tzinfo=timezone.utc)
+                    task_due = task_due.replace(tzinfo=UTC)
             else:
                 task_due = task.due_date
 
             # Obsługa stref czasowych
             if task_due.tzinfo and not now.tzinfo:
-                now = now.replace(tzinfo=timezone.utc)
+                now = now.replace(tzinfo=UTC)
 
             # Oblicz różnicę czasu
             time_left = task_due - now
@@ -108,7 +112,7 @@ class TaskScorer:
         if task.goal_deadline:
             # Obsługa stref czasowych (tylko stdlib)
             if task.goal_deadline.tzinfo is None and now.tzinfo:
-                target = task.goal_deadline.replace(tzinfo=timezone.utc)
+                target = task.goal_deadline.replace(tzinfo=UTC)
             else:
                 target = task.goal_deadline
 
@@ -117,7 +121,7 @@ class TaskScorer:
             # Zakładamy że 'now' jest UTC aware.
 
             if target.tzinfo and not now.tzinfo:
-                now = now.replace(tzinfo=timezone.utc)
+                now = now.replace(tzinfo=UTC)
 
             time_left = target - now
             days_left = time_left.total_seconds() / 86400
@@ -146,7 +150,7 @@ class TaskScorer:
                 pass
 
             if target.tzinfo and not now.tzinfo:
-                now = now.replace(tzinfo=timezone.utc)
+                now = now.replace(tzinfo=UTC)
 
             time_left = target - now
             days_left = time_left.total_seconds() / 86400
@@ -181,7 +185,7 @@ class TaskScorer:
         # Jeśli nadal None (np. zadanie jest blocked), bonus = 0
         if start_time:
             if start_time.tzinfo is None and now.tzinfo:
-                now = now.replace(tzinfo=timezone.utc)
+                now = now.replace(tzinfo=UTC)
 
             wait_time = now - start_time
             hours_waiting = wait_time.total_seconds() / 3600

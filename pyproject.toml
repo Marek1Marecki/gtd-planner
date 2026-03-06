@@ -53,13 +53,51 @@ dev = [
     "ipython>=8.20.0",
 ]
 
+[dependency-groups]
+dev = [
+    "mkdocs-material>=9.7.4",
+    "mkdocstrings[python]>=1.0.3",
+]
+
 [tool.ruff]
 line-length = 120
 target-version = "py314"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "C4"]
+# Select: Łączymy Twoje kody z nowymi (D, UP, TID)
+select = [
+    "E",   # Error (podstawowe błędy)
+    "F",   # Pyflakes (logika)
+    "W",   # Warning (styl)
+    "I",   # Isort (sortowanie importów)
+    "B",   # Bugbear (częste błędy logiczne)
+    "C4",  # Comprehensions (lepsze listy/słowniki)
+    "UP",  # Pyupgrade (wymuszanie nowoczesnej składni Pythona 3.14)
+    "D",   # Pydocstyle (dokumentacja w kodzie)
+    "TID", # Tidy Imports (blokowanie niepoprawnych kierunków importów)
+]
 ignore = []
+
+[tool.ruff.lint.pydocstyle]
+# Wybieramy konwencję Google dla docstringów
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Tutaj dzieje się magia: pilnujemy dokumentacji tylko tam, gdzie to ważne
+"web/apps/*/domain/**" = []            # W domenie D jest obowiązkowe
+"web/apps/*/application/**" = []       # W aplikacji D jest obowiązkowe
+"web/apps/*/adapters/**" = []
+"web/apps/*/ports/**" = []
+# Wszędzie indziej wyłączamy wymóg docstringów (D), aby nie spowalniać pracy
+"web/apps/*/tests/**" = ["D"]
+"web/apps/*/migrations/**" = ["D"]
+"web/apps/*/views.py" = []
+"web/apps/*/models.py" = []
+"web/apps/*/services.py" = []
+"web/apps/*/apps.py" = []
+"web/apps/*/admin.py" = ["D"]
+"web/gtd_calendar/**" = ["D"]
+"web/manage.py" = ["D"]
 
 [tool.ruff.format]
 quote-style = "double"

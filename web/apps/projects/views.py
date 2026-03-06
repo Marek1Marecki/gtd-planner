@@ -1,3 +1,5 @@
+"""Project views for GTD system project management and tracking."""
+
 from typing import Any
 
 from django.contrib.auth.decorators import login_required

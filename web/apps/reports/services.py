@@ -1,3 +1,5 @@
+"""Activity logging services for reports."""
+
 # apps/reports/services.py
 from typing import Any
 
@@ -7,11 +9,11 @@ from .models import ActivityLog
 
 
 class ActivityLogger:
+    """Service for logging user activities and events."""
+
     @staticmethod
     def log(user: Any, obj: Any, action_type: str, description: str = "", details: Any = None) -> None:
-        """
-        Uniwersalna metoda do logowania zdarzeń.
-        """
+        """Uniwersalna metoda do logowania zdarzeń."""
         if not user or not user.is_authenticated:
             return None  # Nie logujemy działań systemu/anonimowych (chyba że chcemy)
 

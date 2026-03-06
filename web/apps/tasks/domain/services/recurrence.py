@@ -1,6 +1,7 @@
+"""Task recurrence services for recurring patterns."""
+
 # apps/tasks/domain/services/recurrence.py
 from datetime import date, datetime, timedelta
-from typing import List
 
 from dateutil.rrule import rrulestr
 
@@ -9,7 +10,9 @@ from apps.tasks.models import ChecklistItem, RecurringPattern, Task
 
 
 class RecurrenceService:
-    def generate_daily_instances(self) -> List[Task]:
+    """Service for managing recurring task patterns."""
+
+    def generate_daily_instances(self) -> list[Task]:
         """Sprawdza aktywne szablony (Fixed) i generuje zadania na dziś."""
         today = date.today()
         generated = []

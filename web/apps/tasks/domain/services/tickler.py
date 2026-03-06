@@ -1,3 +1,5 @@
+"""Tickler services for task review management."""
+
 # apps/tasks/domain/services/tickler.py
 from datetime import date, timedelta
 from typing import Any
@@ -6,9 +8,11 @@ from apps.tasks.models import Task
 
 
 class TicklerService:
+    """Service for managing tickler file and task reviews."""
+
     def get_tasks_for_review(self, user: Any) -> Any:
-        """
-        Zwraca zadania, które wymagają uwagi dzisiaj.
+        """Zwraca zadania, które wymagają uwagi dzisiaj.
+
         Warunki:
         1. Status to WAITING/DELEGATED/POSTPONED
         2. review_date <= dzisiaj (lub brak daty, jeśli chcemy być surowi)

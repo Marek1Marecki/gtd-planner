@@ -1,3 +1,5 @@
+"""Habit views for GTD system daily tracking."""
+
 from datetime import date
 from typing import Any
 
@@ -33,6 +35,7 @@ def habit_list_widget(request: Any) -> HttpResponse:
 @login_required
 @require_POST
 def habit_complete_view(request: Any, pk: int) -> HttpResponse:
+    """Mark a habit as completed for today."""
     habit = get_object_or_404(Habit, pk=pk, user=request.user)
     service = HabitService()
     service.complete_habit(habit, date.today())

@@ -1,9 +1,13 @@
+"""Goal models for GTD system."""
+
 # apps/goals/models.py
 from django.conf import settings
 from django.db import models
 
 
 class Goal(models.Model):
+    """Represents a goal in the GTD methodology."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="subgoals")
     title = models.CharField(max_length=200)
@@ -15,4 +19,5 @@ class Goal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
+        """Return string representation of the goal."""
         return self.title

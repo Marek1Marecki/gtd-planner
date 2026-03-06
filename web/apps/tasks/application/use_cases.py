@@ -1,6 +1,7 @@
+"""Task application use cases."""
+
 # apps/tasks/application/use_cases.py
 from dataclasses import dataclass
-from typing import Optional
 
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.ports.repositories import ITaskRepository
@@ -8,27 +9,33 @@ from apps.tasks.ports.repositories import ITaskRepository
 
 @dataclass
 class CreateTaskInput:
+    """Input data for creating a new task."""
+
     title: str
     user_id: int
     description: str = ""
-    duration_min: Optional[int] = None
-    duration_max: Optional[int] = None
-    project_id: Optional[int] = None
+    duration_min: int | None = None
+    duration_max: int | None = None
+    project_id: int | None = None
     energy_required: int = 2
     is_private: bool = False
-    context_id: Optional[int] = None
-    area_id: Optional[int] = None
+    context_id: int | None = None
+    area_id: int | None = None
     is_milestone: bool = False
-    goal_id: Optional[int] = None
+    goal_id: int | None = None
     status: str = "inbox"
     priority: int = 3
 
 
 class CreateTaskUseCase:
+    """Use case for creating new tasks."""
+
     def __init__(self, repository: ITaskRepository):
+        """Initialize use case with repository."""
         self.repository = repository
 
     def execute(self, input_dto: CreateTaskInput) -> TaskEntity:
+        """Execute the task creation use case."""
         if not input_dto.title:
             raise ValueError("Task title cannot be empty")
 

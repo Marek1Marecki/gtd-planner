@@ -1,3 +1,5 @@
+"""Goal views for GTD system strategic planning."""
+
 from typing import Any
 
 from django.contrib.auth.decorators import login_required
@@ -28,6 +30,7 @@ def goal_list_view(request: Any) -> HttpResponse:
 
 @login_required
 def goal_create_view(request: Any) -> HttpResponse:
+    """Create a new goal for the user."""
     if request.method == "POST":
         form = GoalForm(request.user, request.POST)
         if form.is_valid():
@@ -43,6 +46,7 @@ def goal_create_view(request: Any) -> HttpResponse:
 
 @login_required
 def goal_edit_view(request: Any, pk: int) -> HttpResponse:
+    """Edit an existing goal."""
     goal = get_object_or_404(Goal, pk=pk, user=request.user)
     if request.method == "POST":
         form = GoalForm(request.user, request.POST, instance=goal)

@@ -1,3 +1,5 @@
+"""Project prediction and completion date calculation."""
+
 # apps/projects/domain/prediction.py
 from datetime import date, timedelta
 from typing import Any
@@ -7,13 +9,14 @@ from django.utils import timezone
 
 
 class ProjectPredictor:
+    """Service for predicting project completion dates."""
+
     def __init__(self, daily_capacity_minutes: int = 240) -> None:  # Domyślnie 4h dziennie na projekty
+        """Initialize project predictor with daily capacity."""
         self.daily_capacity = daily_capacity_minutes
 
     def predict_completion_date(self, project_tasks: list[Any]) -> date:
-        """
-        Oblicza datę zakończenia na podstawie sumy czasów zadań.
-        """
+        """Oblicza datę zakończenia na podstawie sumy czasów zadań."""
         # 1. Policz ile minut pracy zostało
         # (Bierzemy d_exp czyli średnią z min/max, lub default)
         total_minutes_left = 0
@@ -49,7 +52,7 @@ class ProjectPredictor:
         return current_date
 
     def _get_current_date(self) -> date:
-        """Helper method to get current date, respecting mocked settings"""
+        """Helper method to get current date, respecting mocked settings."""
         now = getattr(settings, "NOW", None)
         if now:
             return now if isinstance(now, date) else now.date()

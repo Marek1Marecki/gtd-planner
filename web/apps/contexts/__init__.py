@@ -1,1 +1,3 @@
+"""Contexts management application."""
+
 default_app_config = "apps.contexts.apps.ContextsConfig"

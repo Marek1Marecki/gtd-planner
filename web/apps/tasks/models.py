@@ -1,3 +1,5 @@
+"""Task models for GTD system."""
+
 # apps/tasks/models.py
 from typing import Any
 
@@ -9,12 +11,16 @@ from django.utils import timezone
 
 
 class RecurringPattern(models.Model):
+    """Represents a recurring pattern for task generation."""
+
     title = models.CharField(max_length=200)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey("projects.Project", null=True, blank=True, on_delete=models.SET_NULL)
 
     # Typ interwału
     class RecurrenceFrequency(models.TextChoices):
+        """Available frequency options for recurring patterns."""
+
         DAILY = "DAILY", "Codziennie"
         WEEKLY = "WEEKLY", "Co tydzień"
         MONTHLY = "MONTHLY", "Co miesiąc"
@@ -52,17 +58,18 @@ class RecurringPattern(models.Model):
     completed_count = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
+        """Return string representation of the recurring pattern."""
         return f"Pattern: {self.title} ({self.get_frequency_display()})"
 
     @property
     def completion_rate(self) -> int:
+        """Calculate completion rate percentage."""
         if self.generated_count == 0:
             return 0
         return int((self.completed_count / self.generated_count) * 100)
 
     def get_rrule_string(self) -> str:
         """Generuje string zgodny z RFC 5545 na podstawie pól modelu."""
-
         parts = [f"FREQ={self.frequency}"]
         parts.append(f"INTERVAL={self.interval}")
 
@@ -84,12 +91,16 @@ class RecurringPattern(models.Model):
 
 
 class Task(models.Model):
+    """Represents a task in the GTD methodology."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
 
     # Używamy TextChoices dla wygody w Adminie, ale mapujemy to na Enum domenowy
     class StatusChoices(models.TextChoices):
+        """Available status choices for tasks."""
+
         INBOX = "inbox", "Inbox"
         TODO = "todo", "To Do"
         SCHEDULED = "scheduled", "Scheduled"
@@ -161,9 +172,11 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
+        """Return string representation of the task."""
         return self.title
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        """Override save to automatically inherit area from project."""
         # Automatyczne dziedziczenie obszaru z projektu
         if self.project and self.project.area and not self.area:
             self.area = self.project.area
@@ -172,6 +185,7 @@ class Task(models.Model):
 
 @receiver(m2m_changed, sender=Task.blocked_by.through)
 def dependencies_changed(sender: Any, instance: Any, action: str, **kwargs: Any) -> None:
+    """Handle task dependency changes to recalculate project CPM."""
     if action in ["post_add", "post_remove", "post_clear"]:
         if instance.project_id:
             from apps.projects.services.project_service import ProjectService
@@ -182,6 +196,7 @@ def dependencies_changed(sender: Any, instance: Any, action: str, **kwargs: Any)
 
 @receiver(post_save, sender=Task)
 def task_changed(sender: Any, instance: Any, created: bool, **kwargs: Any) -> None:
+    """Handle task changes to recalculate project CPM if needed."""
     # Jeśli zmienił się czas trwania, też trzeba przeliczyć
     if instance.project_id:
         from apps.projects.services.project_service import ProjectService
@@ -193,6 +208,7 @@ def task_changed(sender: Any, instance: Any, created: bool, **kwargs: Any) -> No
 
 @receiver(post_save, sender=Task)
 def check_recurrence_on_completion(sender: Any, instance: Any, **kwargs: Any) -> None:
+    """Handle recurring task completion to generate next instance."""
     if instance.status == "done" and instance.recurring_pattern:
         # Import z nowego miejsca (przez __init__)
         from apps.tasks.domain.services import RecurrenceService
@@ -202,6 +218,8 @@ def check_recurrence_on_completion(sender: Any, instance: Any, **kwargs: Any) ->
 
 
 class ChecklistItem(models.Model):
+    """Represents a checklist item within a task."""
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="checklist_items", null=True, blank=True)
     recurring_pattern = models.ForeignKey(
         RecurringPattern, on_delete=models.CASCADE, related_name="template_items", null=True, blank=True
@@ -212,19 +230,23 @@ class ChecklistItem(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
+        """Meta options for ChecklistItem model."""
+
         ordering = ["order", "id"]
 
     def __str__(self) -> str:
+        """Return string representation of the checklist item."""
         return self.text
 
     @property
     def checklist_progress(self) -> int:
+        """Calculate checklist progress percentage."""
         # This property should be accessed on Task, not ChecklistItem
         # For now, return 0 as placeholder
         return 0
 
     @property
     def duration_expected(self) -> int:
-        """Oblicza d_exp (średnia)."""
+        """Calculate expected duration for task."""
         # ChecklistItem doesn't have duration fields, return 0 as placeholder
         return 0

@@ -1,12 +1,15 @@
+"""Calendar provider ports and interfaces."""
+
 # apps/calendar_app/ports/calendar_provider.py
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import List
 
 
 @dataclass
 class FixedEvent:
+    """Represents a fixed calendar event."""
+
     title: str
     start_time: datetime
     end_time: datetime
@@ -14,7 +17,9 @@ class FixedEvent:
 
 
 class ICalendarProvider(ABC):
+    """Interface for calendar providers."""
+
     @abstractmethod
-    def get_events(self, user_id: int, day: date) -> List[FixedEvent]:
+    def get_events(self, user_id: int, day: date) -> list[FixedEvent]:
         """Pobiera sztywne spotkania na dany dzień."""
         pass

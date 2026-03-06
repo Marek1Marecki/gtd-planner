@@ -1,22 +1,26 @@
+"""Project domain entities."""
+
 # apps/projects/domain/entities.py
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
 
 
 @dataclass
 class ProjectEntity:
-    id: Optional[int]
+    """Represents a project in the domain layer."""
+
+    id: int | None
     title: str
     description: str = ""
     status: str = "active"  # active, completed, on_hold
 
     # Hierarchia
-    parent_project_id: Optional[int] = None
-    goal_id: Optional[int] = None
+    parent_project_id: int | None = None
+    goal_id: int | None = None
 
     # Terminy
-    deadline: Optional[date] = None
+    deadline: date | None = None
 
     def is_root(self) -> bool:
+        """Check if project is a root project (no parent)."""
         return self.parent_project_id is None

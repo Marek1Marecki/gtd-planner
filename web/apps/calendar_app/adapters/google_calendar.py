@@ -1,6 +1,8 @@
+"""Google Calendar adapter for calendar integration."""
+
 # apps/calendar_app/adapters/google_calendar.py
 from datetime import date, datetime, time
-from typing import Any, List
+from typing import Any
 
 from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
@@ -11,6 +13,8 @@ from apps.core.models import GoogleCredentials
 
 
 class GoogleCalendarAdapter(ICalendarProvider):
+    """Google Calendar API adapter for fetching calendar events."""
+
     def _fetch_from_google(self, service: Any, t_min: str, t_max: str) -> list[Any]:
         """Metoda pomocnicza do pobierania i parsowania zdarzeń z API."""
         try:
@@ -74,7 +78,7 @@ class GoogleCalendarAdapter(ICalendarProvider):
             print(f"Błąd budowania serwisu: {e}")
             return None
 
-    def get_events(self, user_id: int, day: date) -> List[FixedEvent]:
+    def get_events(self, user_id: int, day: date) -> list[FixedEvent]:
         """Pobiera wydarzenia na jeden dzień."""
         service = self._get_service(user_id)
         if not service:
