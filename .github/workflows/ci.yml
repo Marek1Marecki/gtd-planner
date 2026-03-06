@@ -41,16 +41,16 @@ jobs:
       - name: Build Docker Image
         run: docker build -t gtd-planner:latest .
 
-      - name: Tier 2: Run Vulnerability Scan (Trivy)
+      - name: Tier 2 Run Vulnerability Scan (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'gtd-planner:latest'
           format: 'table'
-          exit-code: '1' # Przerwij pipeline jeśli znajdziesz błędy
+          exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
 
-      - name: Tier 2: Run Runtime Integrity Test
+      - name: Tier 2 Run Runtime Integrity Test
         run: |
           # Wykonujemy ten sam test negatywny co w Makefile
           docker run --rm --read-only --tmpfs /tmp gtd-planner:latest python -c "open('/tmp/test', 'w').write('ok')"
