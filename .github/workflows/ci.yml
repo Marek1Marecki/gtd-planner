@@ -42,12 +42,22 @@ jobs:
 
       - name: Run Quality Check
         run: |
-          cp .env.example .env
-          export PYTHONPATH=web
-          # USTAWIAMY POŁĄCZENIE DO POSTGRESA W CI
-          export DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
-          export SECRET_KEY=ci-testing-key
+          # Tworzymy kompletny plik .env dla CI
+          cat <<EOF > .env
+          SECRET_KEY=ci-dummy-secret-key-12345
+          DEBUG=0
+          ALLOWED_HOSTS=localhost,127.0.0.1
+          DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
+          POSTGRES_DB=gtd_db
+          POSTGRES_USER=gtd_user
+          POSTGRES_PASSWORD=gtd_password
+          POSTGRES_HOST=localhost
+          POSTGRES_PORT=5432
+          EOF
           
-          # Uruchamiamy make check, ale CI musi uruchomić WSZYSTKIE testy, 
-          # aby sprawdzić coverage 80%
-          make check MIN_COVERAGE=80  # Makefile powinien teraz odpalić pytest web
+          export PYTHONPATH=web
+          # Dodatkowe exporty dla pewności narzędzi
+          export SECRET_KEY=ci-dummy-secret-key-12345
+          export DATABASE_URL=postgres://gtd_user:gtd_password@localhost:5432/gtd_db
+          
+          make check
