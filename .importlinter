@@ -1,0 +1,36 @@
+[importlinter]
+root_packages =
+    apps
+include_external_packages = True
+
+[importlinter:contract:tasks-domain-purity]
+name = Tasks Domain must not import from Django or infrastructure
+type = forbidden
+source_modules =
+    apps.tasks.domain
+forbidden_modules =
+    django
+    apps.tasks.adapters
+    apps.tasks.models
+    apps.tasks.views
+
+[importlinter:contract:calendar-domain-purity]
+name = Calendar Domain must not import from Django or infrastructure
+type = forbidden
+source_modules =
+    apps.calendar_app.domain
+forbidden_modules =
+    django
+    apps.calendar_app.adapters
+    apps.calendar_app.models
+    apps.calendar_app.views
+
+[importlinter:contract:projects-domain-purity]
+name = Projects Domain must not import from Django or infrastructure
+type = forbidden
+source_modules =
+    apps.projects.domain
+forbidden_modules =
+    django
+    apps.projects.models
+    apps.projects.views

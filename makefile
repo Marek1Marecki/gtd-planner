@@ -59,7 +59,9 @@ lint:
 	uv run ruff check $(PY_DIRS)
 
 type-check:
-	PYTHONPATH=web uv run --env-file .env mypy web/apps web/gtd_calendar
+	@echo "Running MyPy with dummy environment..."
+	PYTHONPATH=web DATABASE_URL=postgres://u:p@localhost:5432/db SECRET_KEY=dummy uv run mypy $(PY_DIRS)
+	PYTHONPATH=web uv run lint-imports
 
 secrets-check:
 	@echo "Tier 1: Validating secrets against .env.example..."

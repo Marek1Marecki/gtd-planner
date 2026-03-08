@@ -6,8 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
-from apps.calendar_app.ports.calendar_provider import FixedEvent
-from apps.core.models import UserProfile
+from apps.calendar_app.ports.calendar_provider import FixedEvent, ICalendarProvider, ITaskRepository, UserProfileData
 from apps.tasks.domain.entities import TaskEntity
 from apps.tasks.domain.services import TaskScorer
 
@@ -183,18 +182,22 @@ class SchedulerService:
 
         return schedule
 
-    def get_weekly_plan(self, user: Any, start_date: date, now: datetime) -> list[Any]:
+    def get_weekly_plan(
+        self,
+        user_id: int,
+        start_date: date,
+        now: datetime,
+        task_repository: ITaskRepository,
+        calendar_provider: ICalendarProvider,
+        user_profile: UserProfileData,
+    ) -> list[Any]:
         """Generuje plan na 7 dni od start_date."""
-        from apps.calendar_app.adapters.google_calendar import GoogleCalendarAdapter
-        from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
-
         week_plan = []
         days = [start_date + timedelta(days=i) for i in range(7)]
         end_date = days[-1]
 
         # 1. Pobierz zadania (pula do rozdysponowania)
-        task_repo = DjangoTaskRepository()
-        all_tasks = task_repo.get_active_tasks()
+        all_tasks = task_repository.get_active_tasks()
         # Ważne: Kopiujemy listę, bo scheduler będzie ją "zjadał" (usuwał zaplanowane)
         # Ale tutaj chcemy symulację. Jeśli zadanie zaplanujemy w Poniedziałek,
         # to we Wtorek już nie powinno być dostępne.
@@ -205,8 +208,7 @@ class SchedulerService:
         pool_personal = [t for t in all_tasks if t.is_private]
 
         # 2. Pobierz Fixed Events (Batch)
-        gcal = GoogleCalendarAdapter()
-        all_fixed = gcal.get_events_range(user.id, start_date, end_date)
+        all_fixed = calendar_provider.get_events_range(user_id, start_date, end_date)
 
         # 3. Pętla po dniach
         for day in days:
@@ -215,10 +217,7 @@ class SchedulerService:
 
             # Profil (Godziny) - dla uproszczenia te same co w user profile,
             # ale w weekendy mogłyby być inne (TODO).
-            try:
-                profile = user.profile
-            except UserProfile.DoesNotExist, AttributeError:
-                continue
+            profile = user_profile
 
             # --- Work Timeline ---
             # Convert string hours to time objects

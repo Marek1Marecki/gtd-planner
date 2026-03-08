@@ -3,12 +3,13 @@
 # apps/tasks/adapters/orm_repositories.py
 from typing import Any
 
+from apps.calendar_app.ports.calendar_provider import ITaskRepository as CalendarTaskRepository
 from apps.tasks.domain.entities import TaskEntity, TaskStatus
 from apps.tasks.models import Task as TaskModel
 from apps.tasks.ports.repositories import ITaskRepository
 
 
-class DjangoTaskRepository(ITaskRepository):
+class DjangoTaskRepository(ITaskRepository, CalendarTaskRepository):
     """Django ORM implementation of task repository."""
 
     def to_entity(self, model: TaskModel) -> TaskEntity:

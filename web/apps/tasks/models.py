@@ -211,7 +211,7 @@ def check_recurrence_on_completion(sender: Any, instance: Any, **kwargs: Any) ->
     """Handle recurring task completion to generate next instance."""
     if instance.status == "done" and instance.recurring_pattern:
         # Import z nowego miejsca (przez __init__)
-        from apps.tasks.domain.services import RecurrenceService
+        from apps.tasks.application.recurrence import RecurrenceService
 
         service = RecurrenceService()
         service.handle_task_completion(instance)

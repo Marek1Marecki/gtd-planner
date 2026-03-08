@@ -201,7 +201,30 @@ def weekly_view(request: Any) -> HttpResponse:
     scheduler = SchedulerService()
     from django.utils import timezone
 
-    week_plan = scheduler.get_weekly_plan(request.user, start_of_week, timezone.now())
+    # Pobierz profil (dla godzin)
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist, AttributeError:
+        profile = UserProfile.objects.create(user=request.user)
+
+    # Prepare dependencies
+    from apps.calendar_app.adapters.google_calendar import GoogleCalendarAdapter
+    from apps.calendar_app.ports.calendar_provider import UserProfileData
+    from apps.tasks.adapters.orm_repositories import DjangoTaskRepository
+
+    task_repository = DjangoTaskRepository()
+    calendar_provider = GoogleCalendarAdapter()
+    user_profile_data = UserProfileData(
+        work_start_hour=profile.work_start_hour,
+        work_end_hour=profile.work_end_hour,
+        personal_start_hour=profile.personal_start_hour,
+        personal_end_hour=profile.personal_end_hour,
+        energy_profile=profile.energy_profile,
+    )
+
+    week_plan = scheduler.get_weekly_plan(
+        request.user.id, start_of_week, timezone.now(), task_repository, calendar_provider, user_profile_data
+    )
 
     # 3. Generuj linki nawigacyjne
     prev_week_start = start_of_week - timedelta(weeks=1)

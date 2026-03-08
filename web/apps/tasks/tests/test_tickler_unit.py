@@ -4,7 +4,7 @@
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import Mock, patch
 
-from apps.tasks.domain.services.tickler import TicklerService
+from apps.tasks.application.tickler import TicklerService
 
 
 class TestTicklerServiceUnit:
@@ -24,7 +24,7 @@ class TestTicklerServiceUnit:
         mock_queryset = Mock()
         mock_queryset.order_by.return_value = mock_queryset
 
-        with patch("apps.tasks.domain.services.tickler.Task") as mock_task_model:
+        with patch("apps.tasks.application.tickler.Task") as mock_task_model:
             mock_task_model.objects.filter.return_value = mock_queryset
 
             result = self.service.get_tasks_for_review(self.user)
@@ -41,7 +41,7 @@ class TestTicklerServiceUnit:
         """Test that the filter logic correctly identifies review tasks."""
         today = date.today()
 
-        with patch("apps.tasks.domain.services.tickler.Task") as mock_task_model:
+        with patch("apps.tasks.application.tickler.Task") as mock_task_model:
             mock_queryset = Mock()
             mock_task_model.objects.filter.return_value = mock_queryset
 
@@ -61,7 +61,7 @@ class TestTicklerServiceUnit:
         mock_queryset = Mock()
 
         with (
-            patch("apps.tasks.domain.services.tickler.Task") as mock_task_model,
+            patch("apps.tasks.application.tickler.Task") as mock_task_model,
             patch("django.utils.timezone"),
         ):
             # Setup timezone mock
@@ -85,7 +85,7 @@ class TestTicklerServiceUnit:
         """Test getting stale waiting tasks with default days parameter."""
 
         with (
-            patch("apps.tasks.domain.services.tickler.Task") as mock_task_model,
+            patch("apps.tasks.application.tickler.Task") as mock_task_model,
             patch("django.utils.timezone"),
         ):
             mock_queryset = Mock()
@@ -108,7 +108,7 @@ class TestTicklerServiceUnit:
         custom_days = 7
 
         with (
-            patch("apps.tasks.domain.services.tickler.Task") as mock_task_model,
+            patch("apps.tasks.application.tickler.Task") as mock_task_model,
             patch("django.utils.timezone"),
         ):
             mock_queryset = Mock()
@@ -129,7 +129,7 @@ class TestTicklerServiceUnit:
         """Test that stale tasks filter has correct conditions."""
 
         with (
-            patch("apps.tasks.domain.services.tickler.Task") as mock_task_model,
+            patch("apps.tasks.application.tickler.Task") as mock_task_model,
             patch("django.utils.timezone"),
         ):
             mock_queryset = Mock()
@@ -148,7 +148,7 @@ class TestTicklerServiceUnit:
         """Test that service methods return Django QuerySet objects."""
 
         with (
-            patch("apps.tasks.domain.services.tickler.Task") as mock_task_model,
+            patch("apps.tasks.application.tickler.Task") as mock_task_model,
             patch("django.utils.timezone"),
         ):
             mock_queryset = Mock()
@@ -179,7 +179,7 @@ class TestTicklerServiceUnit:
         """Test that review tasks use correct date comparison."""
         today = date.today()
 
-        with patch("apps.tasks.domain.services.tickler.Task") as mock_task_model:
+        with patch("apps.tasks.application.tickler.Task") as mock_task_model:
             mock_queryset = Mock()
             mock_task_model.objects.filter.return_value = mock_queryset
 

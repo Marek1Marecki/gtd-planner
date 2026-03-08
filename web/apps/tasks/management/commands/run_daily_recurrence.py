@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from apps.tasks.domain.services import RecurrenceService
+from apps.tasks.application.recurrence import RecurrenceService
 from django.core.management.base import BaseCommand
 
 

@@ -13,7 +13,7 @@ from apps.areas.models import Area
 from apps.goals.models import Goal
 from apps.notes.models import Note
 from apps.projects.models import Project
-from apps.tasks.domain.services.tickler import TicklerService
+from apps.tasks.application.tickler import TicklerService
 from apps.tasks.models import RecurringPattern, Task
 
 from .domain.services import ReportService

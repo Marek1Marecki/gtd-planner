@@ -19,12 +19,12 @@ class ProjectPredictorTest(TestCase):
         self.user = User.objects.create_user(
             username=f"testuser_{uuid.uuid4().hex[:8]}", email="test@example.com", password="testpass123"
         )
-        self.predictor = ProjectPredictor(daily_capacity_minutes=240)  # 4 hours
+        self.predictor = ProjectPredictor(daily_capacity_minutes=240, current_date=date(2024, 1, 15))  # 4 hours
 
     def test_predict_completion_date_no_tasks(self) -> None:
         """Test prediction with no tasks"""
         completion_date = self.predictor.predict_completion_date([])
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_zero_duration_tasks(self) -> None:
         """Test prediction with tasks that have zero duration"""
@@ -34,7 +34,7 @@ class ProjectPredictorTest(TestCase):
         task2 = Task.objects.create(user=self.user, title="Task 2", project=project, duration_min=0)
 
         completion_date = self.predictor.predict_completion_date([task1, task2])
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_single_task_same_day(self) -> None:
         """Test prediction with single task that fits in one day"""
@@ -43,7 +43,7 @@ class ProjectPredictorTest(TestCase):
         task = Task.objects.create(user=self.user, title="Task", project=project, duration_min=120)  # 2 hours
 
         completion_date = self.predictor.predict_completion_date([task])
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_single_task_multiple_days(self) -> None:
         """Test prediction with single task that spans multiple days"""
@@ -54,7 +54,7 @@ class ProjectPredictorTest(TestCase):
         completion_date = self.predictor.predict_completion_date([task])
 
         # Should take 3 days (10 hours / 4 hours per day = 2.5 days, rounded up)
-        expected_date = date.today()
+        expected_date = date(2024, 1, 15)
         days_needed = 0
         hours_remaining = 10
 
@@ -77,7 +77,7 @@ class ProjectPredictorTest(TestCase):
         completion_date = self.predictor.predict_completion_date([task1, task2, task3])
 
         # Total: 6 hours = 2 days
-        expected_date = date.today()
+        expected_date = date(2024, 1, 15)
         days_needed = 0
         hours_remaining = 6
 
@@ -97,15 +97,12 @@ class ProjectPredictorTest(TestCase):
         task = Task.objects.create(user=self.user, title="Long Task", project=project, duration_min=480)
 
         # Start on Friday
-        friday = date(2024, 1, 5)  # This is a Friday
+        friday_predictor = ProjectPredictor(daily_capacity_minutes=240, current_date=date(2024, 1, 5))  # Friday
+        completion_date = friday_predictor.predict_completion_date([task])
 
-        # Mock today to be Friday
-        with self.settings(NOW=friday):
-            completion_date = self.predictor.predict_completion_date([task])
-
-            # Should complete on Tuesday (skip weekend)
-            expected_tuesday = date(2024, 1, 9)
-            self.assertEqual(completion_date, expected_tuesday)
+        # Should complete on Tuesday (skip weekend)
+        expected_tuesday = date(2024, 1, 9)
+        self.assertEqual(completion_date, expected_tuesday)
 
     def test_predict_completion_date_duration_min_max_average(self) -> None:
         """Test prediction uses average of min/max duration"""
@@ -117,7 +114,7 @@ class ProjectPredictorTest(TestCase):
 
         # Should use average: (60 + 180) / 2 = 120 minutes = 2 hours
         # Should complete same day
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_duration_min_only(self) -> None:
         """Test prediction with only min duration"""
@@ -134,7 +131,7 @@ class ProjectPredictorTest(TestCase):
         completion_date = self.predictor.predict_completion_date([task])
 
         # Should use min duration as both min and max: (90 + 90) / 2 = 90 minutes
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_default_duration(self) -> None:
         """Test prediction uses default duration when none specified"""
@@ -150,7 +147,7 @@ class ProjectPredictorTest(TestCase):
         completion_date = self.predictor.predict_completion_date([task])
 
         # Should use default 30 minutes
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_custom_capacity(self) -> None:
         """Test prediction with custom daily capacity"""
@@ -182,14 +179,12 @@ class ProjectPredictorTest(TestCase):
         task = Task.objects.create(user=self.user, title="Long Task", project=project, duration_min=480)
 
         # Mock today to be Friday
-        friday = date(2024, 1, 12)  # Friday
+        friday_predictor = ProjectPredictor(daily_capacity_minutes=240, current_date=date(2024, 1, 12))  # Friday
+        completion_date = friday_predictor.predict_completion_date([task])
 
-        with self.settings(NOW=friday):
-            completion_date = self.predictor.predict_completion_date([task])
-
-            # Friday: 4 hours, Monday: 4 hours = Tuesday completion
-            expected_tuesday = date(2024, 1, 16)
-            self.assertEqual(completion_date, expected_tuesday)
+        # Friday: 4 hours, Monday: 4 hours = Tuesday completion
+        expected_tuesday = date(2024, 1, 16)
+        self.assertEqual(completion_date, expected_tuesday)
 
     def test_predict_completion_date_large_project(self) -> None:
         """Test prediction with large project spanning multiple weeks"""
@@ -209,7 +204,7 @@ class ProjectPredictorTest(TestCase):
         completion_date = self.predictor.predict_completion_date(tasks)
 
         # Should take 10 weekdays = 2 weeks
-        expected_date = date.today()
+        expected_date = date(2024, 1, 15)
         workdays_needed = 10
         workdays_counted = 0
 
@@ -241,7 +236,7 @@ class ProjectPredictorTest(TestCase):
 
         # Total: 80 + 120 + 30 = 230 minutes = ~4 hours
         # Should complete same day
-        self.assertEqual(completion_date, date.today())
+        self.assertEqual(completion_date, date(2024, 1, 15))
 
     def test_predict_completion_date_very_small_capacity(self) -> None:
         """Test prediction with very small daily capacity"""

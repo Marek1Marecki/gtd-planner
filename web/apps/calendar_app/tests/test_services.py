@@ -283,7 +283,21 @@ class SchedulerServiceTest(TestCase):
             },
         )
 
-        plan = self.service.get_weekly_plan(self.user, start_of_week, datetime.now(UTC))
+        # Mock the dependencies
+        mock_task_repo = Mock()
+        mock_task_repo.get_active_tasks.return_value = []
+        mock_calendar_provider = Mock()
+        mock_calendar_provider.get_events_range.return_value = []
+        mock_user_profile = Mock()
+        mock_user_profile.work_start_hour = "09:00"
+        mock_user_profile.work_end_hour = "17:00"
+        mock_user_profile.personal_start_hour = "18:00"
+        mock_user_profile.personal_end_hour = "22:00"
+        mock_user_profile.energy_profile = None
+
+        plan = self.service.get_weekly_plan(
+            self.user.id, start_of_week, datetime.now(UTC), mock_task_repo, mock_calendar_provider, mock_user_profile
+        )
 
         # Should return a list with 7 days
         self.assertIsInstance(plan, list)
@@ -320,7 +334,26 @@ class SchedulerServiceTest(TestCase):
                 mock_windows.return_value = []
                 mock_schedule.return_value = []
 
-                self.service.get_weekly_plan(self.user, start_of_week, datetime.now(UTC))
+                # Mock the dependencies
+                mock_task_repo = Mock()
+                mock_task_repo.get_active_tasks.return_value = []
+                mock_calendar_provider = Mock()
+                mock_calendar_provider.get_events_range.return_value = []
+                mock_user_profile = Mock()
+                mock_user_profile.work_start_hour = "09:00"
+                mock_user_profile.work_end_hour = "17:00"
+                mock_user_profile.personal_start_hour = "18:00"
+                mock_user_profile.personal_end_hour = "22:00"
+                mock_user_profile.energy_profile = None
+
+                self.service.get_weekly_plan(
+                    self.user.id,
+                    start_of_week,
+                    datetime.now(UTC),
+                    mock_task_repo,
+                    mock_calendar_provider,
+                    mock_user_profile,
+                )
 
                 # Should have called scheduling for each day (2x per day: work + personal)
                 self.assertEqual(mock_windows.call_count, 14)  # 7 days × 2 timelines
